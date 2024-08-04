@@ -1,59 +1,51 @@
-import os
 import sys
-
+import os
+import argparse
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+
 from plantcv import plantcv as pcv
-from colorama import Style, Fore
-from utils.tools import DisplayImages
+from utils.tools import LoadImage, ShowImage, DisplayImages
 
-def GrayScale(img_path, action='display'):
-    img = mpimg.imread(img_path)
+def Parsing():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-src', type=str, help='source repository/image')
+    parser.add_argument('-dst', type=str, help='destination repository')
+    return parser.parse_args()
+
+
+def GrayScale(img, action="display"):
     scaled_img = pcv.rgb2gray(rgb_img=img)
-    if action == 'display':
+    if action == "display":
         return scaled_img
-#    elif action == 'save':
+#    elif action == "save":
 
-def Mask(img_path, action='display'):
-    img = cv2.imread(img_path)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, mask = cv2.threshold(gray_img, 128, 255, cv2.THRESH_BINARY)
-    masked_image = pcv.apply_mask(img=img_rgb, mask=mask, mask_color='white')
-    if 'action' == 'display':
-        return masked_image
-#    elif action == 'save':
 
-#def RoiObjects(img_path, action='display'):
-
-#def AnalyzeObject(img_path, action='display')
-
-#def Pseudolandmarks(img_path, action='display'):
-
-def DisplayTransformation():
-    img_path = sys.argv[1]
-    img_list = [mpimg.imread(img_path)]
+def DisplayTransformations(img_path):
+    original_img = LoadImage(img_path)
+    img_list = [original_img]
     transformations = [
         GrayScale,
-        Mask,
+#        Mask,
 #        RoiObjects,
-#        AnalyzeObject,
-#        Pseudolandmarks,
     ]
 
     for func in transformations:
-        img_list.append(func(img_path))
-    DisplayImages(img_list, ["Original", "Gray scaled", "Masked"])
+        transformed_img = func(original_img)
+        img_list.append(transformed_img)
+
+    DisplayImages(img_list, ["Original", "Gray scale"])
+
 
 
 if __name__ == '__main__':
     try:
-        if len(sys.argv) > 1:
-            DisplayTransformation()
-#        else:
-#            repo_path = input(Fore.GREEN + 'Path to repo ==> ' + Style.RESET_ALL)
-#            RepoTransformation()
+        args = Parsing()
+        if os.path.isfile(args.src):
+            DisplayTransformations(args.src)
+#        elif os.pat.isdir(args.src):
+#            RepoTransformations(args.src, args.dst)
+        else:
+            raise Exception('Error: the source file type is incompatible')
 
     except Exception as error:
         print(error)

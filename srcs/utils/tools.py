@@ -1,11 +1,26 @@
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
+from plantcv import plantcv as pcv
+
 def DisplayImages(img_list, title_list):
-    img_list = [np.array(img) if not isinstance(img, np.ndarray) else img for img in img_list]
-    fig, axes = plt.subplots(1, len(img_list), figsize=(20, 20))
-    for ax, img, title in zip(axes, img_list, title_list):
-        ax.imshow(img)
-        ax.set_title(title)
-        ax.axis('off')
-    plt.show()
+    for img, title in zip(img_list, title_list):
+        ShowImage(img, title=title)
+
+def LoadImage(img_path):
+    img, _, _ = pcv.readimage(img_path)
+
+    if img.dtype != np.uint8:
+        img = (img * 255).astype(np.uint8)
+    if len(img.shape) == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+
+    return img
+
+def ShowImage(img, title=''):
+    resized_img = cv2.resize(img, (800, 500), interpolation=cv2.INTER_AREA)
+    cv2.imshow(title, resized_img)
+    while cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1:
+        cv2.waitKey(100)
+    cv2.destroyAllWindows()
