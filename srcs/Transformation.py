@@ -8,7 +8,7 @@ from utils.tools import LoadImage, ShowImage, DisplayImages
 
 def Parsing():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-src', type=str, help='source repository/image')
+    parser.add_argument('src', type=str, help='source repository/image')
     parser.add_argument('-dst', type=str, help='destination repository')
     return parser.parse_args()
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         args = Parsing()
         if os.path.isfile(args.src):
             DisplayTransformations(args.src)
-#        elif os.pat.isdir(args.src):
+#        elif os.path.isdir(args.src):
 #            RepoTransformations(args.src, args.dst)
         else:
             raise Exception('Error: the source file type is incompatible')
