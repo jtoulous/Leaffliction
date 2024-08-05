@@ -17,7 +17,8 @@ def LoadImage(img_path):
     return img
 
 def ShowImage(img, title=''):
-    cv2.imshow(title, img)
-    while cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1:
-        cv2.waitKey(100)
-    cv2.destroyAllWindows()
+    pcv.plot_image(img)
+    #cv2.imshow(title, img)
+    #while cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) >= 1:
+    #    cv2.waitKey(100)
+    #cv2.destroyAllWindows()

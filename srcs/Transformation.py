@@ -14,10 +14,28 @@ def Parsing():
 
 
 def GrayScale(img, action="display"):
-    scaled_img = pcv.rgb2gray(rgb_img=img)
+    scaled_img = pcv.rgb2gray_lab(img, 'l')
+    
+    binary_img = pcv.threshold.otsu(scaled_img, 'light')
+#    ShowImage(binary_img)
+    binary_img = pcv.invert(binary_img)
+#    ShowImage(binary_img)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+#    binary_img = cv2.erode(binary_img, kernel, iterations=1)
+#    ShowImage(binary_img)
+    binary_img = cv2.dilate(binary_img, kernel, iterations=1)
+#    ShowImage(binary_img)
+#    binary_img = pcv.fill(binary_img, 100)
+#    ShowImage(binary_img)
+    masked_img = pcv.apply_mask(scaled_img, binary_img, 'black')
+
     if action == "display":
-        return scaled_img
+        return masked_img
 #    elif action == "save":
+
+
+#def Mask(img, action='display'):
+    
 
 
 def DisplayTransformations(img_path):
