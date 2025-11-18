@@ -17,7 +17,7 @@ install:
 unzip:
 	@echo "$(GREEN)Unzipping data files...$(RESET)"
 	@unzip -o data/leaves.zip -d data/leaves
-	@mv data/leaves/images/* data/leaves/
+	@mv data/leaves/images/* data/leaves/ -n
 	@rm -rf data/leaves/images/
 	@echo "$(GREEN) --> Done.$(RESET)"
 
