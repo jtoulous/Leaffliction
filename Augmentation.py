@@ -1,37 +1,42 @@
 import argparse as ap
 
-from .utils.tools import load_original_images, save_images
+from .srcs.tools import load_original_images, save_images
+
+
 
 
 ################################################################
 ################################################################
-#####                Transformator Class                   #####
+#####                Augmentation Class                    #####
 
-class ImgTransformator:
+class ImgAugmentation:
     def __init__(self):
-        return 
+        return
 
     def transform(self):
         return
 
-    def gaussian_blur(self):
+    def rotation(self):
         return
 
-    def mask(self):
-        return 
-
-    def roi_objects(self):
-        return 
-
-    def analyze_object(self):
+    def blur(self):
         return
 
-    def pseudolandmarks(self):
-        return   
+    def contrast(self):
+        return
+
+    def scaling(self):
+        return
+
+    def illumination(self):
+        return
+
+    def projective(self):
+        return
+
 
 #####                                                      #####
 ################################################################
-
 
 
 
@@ -41,9 +46,7 @@ def ArgumentParsing()
     parser = ap.ArgumentParser()
     parser.add_argument('load_folder', type=str, default='../data/leaves', help='load folder')
     parser.add_argument('save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
-    
     return parser.parse_args()
-
 
 
 
@@ -51,13 +54,13 @@ def ArgumentParsing()
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
-        
+
         images = load_original_images(args.load_folder)
 
-        transformator = ImgTransformator()
-        transformed_images = transformator.transform(images)
+        augmentator = ImgAugmentation()
+        augmented_images = augmentator.transform(images)
 
-        save_images(images, transformed_images, args.save_folder)
+        save_images(images, augmented_images, args.save_folder)
 
 
     except Exception as error:
