@@ -27,6 +27,14 @@ activate:
 	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
 	@echo "   'deactivate'"
 
+zip:
+	@echo "$(GREEN)Zipping data files...$(RESET)"
+	@mkdir -p data/leaves/images
+	@find data/leaves -mindepth 1 -maxdepth 1 ! -name images -exec cp -r {} data/leaves/images/ \;
+	@cd data/leaves && zip -r ../../data/leaves_def.zip images
+	@rm -rf data/leaves/images/
+	@echo "$(GREEN) --> Done.$(RESET)"
+
 clean:
 	@echo "$(GREEN)Cleaning...$(RESET)"
 	@if [ -d __pycache__ ] || [ -d srcs/__pycache__ ]; then \
