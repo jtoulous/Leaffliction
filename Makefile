@@ -6,17 +6,17 @@ all: venv install
 
 venv:
 	@echo "$(GREEN)creating virtual environnement...$(RESET)" 
-	@python -m venv VirtualEnvironnement
+	@python -m venv venv
 	@echo "$(GREEN)Done.$(RESET)"
 
 install:
 	@echo "$(GREEN)installing dependencies..."
-	@. VirtualEnvironnement/bin/activate && pip install -r requirements.txt
+	@. venv/bin/activate && pip install -r requirements.txt
 	@echo "Done.$(RESET)"
 
 clean:
 	@echo "$(RED)removing virtual environnement...$(RESET)"
-	@rm -rf VirtualEnvironnement
+	@rm -rf venv
 	@echo "$(RED)Done.$(RESET)"
 
 .PHONY: all venv install clean 
