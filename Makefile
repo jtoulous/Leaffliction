@@ -31,7 +31,7 @@ zip:
 	@echo "$(GREEN)Zipping data files...$(RESET)"
 	@mkdir -p data/leaves_preprocessed/images
 	@find data/leaves_preprocessed -mindepth 1 -maxdepth 1 ! -name images -exec cp -r {} data/leaves/images/ \;
-	@cd data/leaves_preprocessed && zip -r ../../data/leaves_def.zip images
+	@cd data/leaves_preprocessed && zip -r ../../data/leaves_preprocessed.zip images
 	@rm -rf data/leaves/images/
 	@echo "$(GREEN) --> Done.$(RESET)"
 
@@ -48,6 +48,10 @@ clean:
 	@if [ -d data/leaves_preprocessed ]; then \
 		echo "$(GREEN)     --> Removing leaves_preprocessed folder..."; \
 		rm -rf data/leaves_preprocessed; \
+	fi
+	@if [ -f data/leaves_preprocessed.zip ]; then \
+		echo "$(GREEN)     --> Removing leaves_preprocessed.zip..."; \
+		rm -rf data/leaves_preprocessed.zip; \
 	fi
 	@echo "$(GREEN) --> Done.$(RESET)"; \
 

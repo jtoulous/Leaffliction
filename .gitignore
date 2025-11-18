@@ -2,6 +2,7 @@ __pycache__/
 venv
 data/leaves
 data/leaves.zip
+data/leaves_preprocessed.zip
 data/leaves_test
 data/leaves_test_preprocessed
 data/leaves_preprocessed
