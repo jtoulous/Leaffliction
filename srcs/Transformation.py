@@ -1,6 +1,6 @@
 import argparse as ap
 
-from .utils.tools import load_original_images, save_images
+from utils.tools import load_original_images, save_images
 
 
 ################################################################
@@ -39,8 +39,8 @@ class ImgTransformator:
 
 def ArgumentParsing()
     parser = ap.ArgumentParser()
-    parser.add_argument('load_folder', type=str, default='../data/leaves', help='load folder')
-    parser.add_argument('save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
+    parser.add_argument('-load_folder', type=str, default='../data/leaves', help='load folder')
+    parser.add_argument('-save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
     
     return parser.parse_args()
 
