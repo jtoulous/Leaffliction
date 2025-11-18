@@ -17,7 +17,7 @@ install:
 unzip:
 	@echo "$(GREEN)Unzipping data files...$(RESET)"
 	@unzip -o data/leaves.zip -d data/leaves
-	@mv data/leaves/images/* data/leaves/
+	@mv data/leaves/images/* data/leaves/ -n
 	@rm -rf data/leaves/images/
 	@echo "$(GREEN) --> Done.$(RESET)"
 
@@ -26,6 +26,14 @@ activate:
 	@echo "   '. venv/bin/activate'"
 	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
 	@echo "   'deactivate'"
+
+zip:
+	@echo "$(GREEN)Zipping data files...$(RESET)"
+	@mkdir -p data/leaves/images
+	@find data/leaves -mindepth 1 -maxdepth 1 ! -name images -exec cp -r {} data/leaves/images/ \;
+	@cd data/leaves && zip -r ../../data/leaves_def.zip images
+	@rm -rf data/leaves/images/
+	@echo "$(GREEN) --> Done.$(RESET)"
 
 clean:
 	@echo "$(GREEN)Cleaning...$(RESET)"

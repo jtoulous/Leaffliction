@@ -1,6 +1,6 @@
 import argparse as ap
 
-from utils.tools import load_original_images, save_images
+from .srcs.tools import load_original_images, save_images
 
 
 
@@ -11,17 +11,16 @@ from utils.tools import load_original_images, save_images
 
 class ImgAugmentation:
     def __init__(self):
-        return 
+        return
 
     def transform(self):
         return
 
     def rotation(self):
-        return 
-
+        return
 
     def blur(self):
-        return 
+        return
 
     def contrast(self):
         return
@@ -55,10 +54,10 @@ def ArgumentParsing():
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
-        
-        images = load_images(args.load_folder)
 
-        augmentator = ImgAugmentator()
+        images = load_original_images(args.load_folder)
+
+        augmentator = ImgAugmentation()
         augmented_images = augmentator.transform(images)
 
         save_images(images, augmented_images, args.save_folder)

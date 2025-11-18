@@ -1,6 +1,6 @@
 import argparse as ap
 
-from utils.tools import load_original_images, save_images
+from .srcs.tools import load_original_images, save_images
 
 
 ################################################################
@@ -9,7 +9,7 @@ from utils.tools import load_original_images, save_images
 
 class ImgTransformator:
     def __init__(self):
-        return 
+        return
 
     def transform(self):
         return
@@ -18,16 +18,16 @@ class ImgTransformator:
         return
 
     def mask(self):
-        return 
+        return
 
     def roi_objects(self):
-        return 
+        return
 
     def analyze_object(self):
         return
 
     def pseudolandmarks(self):
-        return   
+        return
 
 #####                                                      #####
 ################################################################
@@ -51,7 +51,7 @@ def ArgumentParsing()
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
-        
+
         images = load_original_images(args.load_folder)
 
         transformator = ImgTransformator()
