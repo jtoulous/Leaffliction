@@ -11,23 +11,48 @@ class ImgTransformator:
     def __init__(self):
         return
 
-    def transform(self):
-        return
+    def transform(self, img_dict):
+        transformed_dict = {}
 
-    def gaussian_blur(self):
-        return
+        for class_name, class_imgs in img_dict.items():
+            transformed_dict[class_name] = {}
+            
+            for image_name, img in class_imgs.items():
+                transformed_dict[class_name][image_name] = {}
 
-    def mask(self):
-        return
+                transformed_dict[class_name][image_name]['original'] = img
+                transformed_dict[class_name][image_name]['gaussian_blur'] = self.gaussian_blur(img)
+                transformed_dict[class_name][image_name]['mask'] = self.mask(img)
+                transformed_dict[class_name][image_name]['roi_objects'] = self.roi_objects(img)
+                transformed_dict[class_name][image_name]['analyze_object'] = self.analyze_object(img)
+                transformed_dict[class_name][image_name]['pseudolandmarks'] = self.pseudolandmarks(img)
 
-    def roi_objects(self):
-        return
+        return transformed_dict
 
-    def analyze_object(self):
-        return
 
-    def pseudolandmarks(self):
-        return
+    def gaussian_blur(self, img):
+        tranformed_img = img.copy()
+        return tranformed_img
+
+
+    def mask(self, img):
+        tranformed_img = img.copy()
+        return tranformed_img
+
+
+    def roi_objects(self, img):
+        tranformed_img = img.copy()
+        return tranformed_img
+
+
+    def analyze_object(self, img):
+        tranformed_img = img.copy()
+        return tranformed_img
+
+
+    def pseudolandmarks(self, img):
+        tranformed_img = img.copy()
+        return tranformed_img
 
 #####                                                      #####
 ################################################################

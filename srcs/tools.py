@@ -1,6 +1,6 @@
 import os
 import cv2
-
+import shutil
 
 
 
@@ -53,10 +53,22 @@ def load_images(load_folder):
 
 
 
-def save_images(imgs, save_folder):
-    return
+def save_images(images, save_folder):
+    os.makedirs(save_folder, exist_ok=True)
 
+    for class_name, class_images in images.items():
+        class_folder = os.path.join(save_folder, class_name)
+        os.makedirs(class_folder, exist_ok=True)
 
+        for image_name, images_variations in class_images.items():
+            image_folder = os.path.join(class_folder, image_name)
+            os.makedirs(image_folder, exist_ok=True)
+
+            for variation, img in images_variations.items():
+                filename = f'{image_name}_{variation}.JPG'
+                filepath = os.path.join(image_folder, filename)
+                
+                cv2.imwrite(filepath, img)
 
 
 
