@@ -1,5 +1,5 @@
 from srcs.ImgClassificator import ImgClassificator
-from srcs.ImgTransformator import ImgTransformator
+from srcs.ImgPreprocessing import ImgTransformation, ImgAugmentation
 
 
 
