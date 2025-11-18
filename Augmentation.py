@@ -3,6 +3,7 @@ import numpy as np
 import argparse as ap
 
 from srcs.tools import load_original_images, save_images
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn # type: ignore
 
 
 class ImgAugmentation:
@@ -11,7 +12,7 @@ class ImgAugmentation:
 
         return
 
-    def transform(self, image=None):
+    def transform(self, image=None, progress=None, task=None):
         if image:
             self.rotation(image)
             self.blur(image)
@@ -20,7 +21,14 @@ class ImgAugmentation:
             self.illumination(image)
             self.projective(image)
         else:
+            if task is not None:
+                progress.update(task, total=len(self.images_structure))
+
             for category in self.images_structure:
+
+                if task is not None:
+                    progress.update(task, description=f"↪ Augmenting images: {category}")
+
                 for img_key in self.images_structure[category]:
                     image = self.images_structure[category][img_key]
                     self.images_structure[category][img_key] = {
@@ -33,9 +41,13 @@ class ImgAugmentation:
                         'projective': self.projective(image),
                     }
 
+                if task is not None:
+                    progress.update(task, advance=1)
+                    progress.update(task, description=f"↪ Images augmentation")
+
         return self.images_structure
 
-    def rotation(self, image, angle=340):
+    def rotation(self, image, angle=np.random.randint(20, 340)):
         if image is None:
             return []
 
@@ -186,12 +198,27 @@ class ImgAugmentation:
 
 def ArgumentParsing():
     parser = ap.ArgumentParser()
-    parser.add_argument('--load_folder', type=str, default='data/leaves',
-                        help='Folder with original images \
-                            (default: data/leaves)')
-    parser.add_argument('--save_folder', type=str, default='data/leaves_preprocessed',
-                        help='Folder to save augmented images \
-                            (default: data/leaves_preprocessed)')
+    parser.add_argument(
+        '--load_folder',
+        type=str,
+        default='data/leaves',
+        help='Folder with original images (default: data/leaves)')
+    parser.add_argument(
+        '--save_folder',
+        type=str,
+        default='data/leaves_preprocessed',
+        help='Folder to save augmented images \
+              (default: data/leaves_preprocessed)')
+    parser.add_argument(
+        '--range',
+        type=int,
+        default=100,
+        help='Percentage of augmented images to process (default: 100)')
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=None,
+        help='Random seed for reproducibility (default: None)')
 
     return parser.parse_args()
 
@@ -200,13 +227,35 @@ if __name__ == '__main__':
     try:
         args = ArgumentParsing()
 
-        images = load_original_images(args.load_folder)
-        print(f'Loaded {sum(len(images[cat]) for cat in images)} images from {args.load_folder} for augmentation.')
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            "[progress.percentage]{task.completed}/{task.total}",
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeElapsedColumn(),
+        ) as progress:
+            global_task = progress.add_task("Global Progress", total=3)
 
-        augmentator = ImgAugmentation(images)
-        augmented_images = augmentator.transform()
+            # Load images
+            images_load_task = progress.add_task("↪ Load images", total=0)
+            images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+            images = {cat: dict(list(imgs.items())[:int(len(imgs)
+                    * args.range / 100)]) for cat, imgs in images.items()}
+            progress.update(global_task, advance=1)
 
-        save_images(augmented_images, args.save_folder)
+            np.random.seed(args.seed)
+
+            # Augment images
+            images_augment_task = progress.add_task("↪ Images augmentation", total=0)
+            augmentator = ImgAugmentation(images)
+            augmented_images = augmentator.transform(progress=progress, task=images_augment_task)
+            progress.update(global_task, advance=1)
+
+            # Save augmented images
+            images_save_task = progress.add_task("↪ Save augmented images", total=0)
+            save_images(augmented_images, args.save_folder, progress=progress, task=images_save_task)
+            progress.update(global_task, advance=1)
 
     except Exception as error:
         print(f'Error: {error}')
