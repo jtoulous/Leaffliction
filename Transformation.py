@@ -1,6 +1,6 @@
 import argparse as ap
 
-from .srcs.tools import load_original_images, save_images
+from srcs.tools import load_original_images, save_images
 
 
 ################################################################
@@ -62,7 +62,7 @@ class ImgTransformator:
 
 
 
-def ArgumentParsing()
+def ArgumentParsing():
     parser = ap.ArgumentParser()
     parser.add_argument('-load_folder', type=str, default='../data/leaves', help='load folder')
     parser.add_argument('-save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
@@ -77,12 +77,13 @@ if __name__ == '__main__':
     try:
         args = ArgumentParsing()
 
+        breakpoint()
         images = load_original_images(args.load_folder)
 
         transformator = ImgTransformator()
         transformed_images = transformator.transform(images)
 
-        save_images(images, transformed_images, args.save_folder)
+        save_images(transformed_images, args.save_folder)
 
 
     except Exception as error:
