@@ -43,12 +43,10 @@ class ImgAugmentation:
 
 
 
-
 def ArgumentParsing()
     parser = ap.ArgumentParser()
-    parser.add_argument('load_folder', type=str, help='load folder')
-    parser.add_argument('save_folder', type=str, help='save folder')
-    
+    parser.add_argument('load_folder', type=str, default='../data/leaves', help='load folder')
+    parser.add_argument('save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
     return parser.parse_args()
 
 
