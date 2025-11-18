@@ -1,6 +1,6 @@
 import argparse as ap
 
-
+from .utils.tools import load_original_images, save_images
 
 
 ################################################################
@@ -47,22 +47,12 @@ def ArgumentParsing()
 
 
 
-def load_images(load_folder):
-    return
-
-
-
-def save_images(save_folder):
-    return
-
-
-
 
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
         
-        images = load_images(args.load_folder)
+        images = load_original_images(args.load_folder)
 
         transformator = ImgTransformator()
         transformed_images = transformator.transform(images)
