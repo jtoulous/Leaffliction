@@ -6,7 +6,7 @@ def load_original_images(load_folder, progress=None, task=None):
     images_dict = {}
 
     if task is not None:
-        progress.update(task, total=len(os.listdir(load_folder)))
+        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder)))
 
     for leaf_class in os.listdir(load_folder):
         class_folder = os.path.join(load_folder, leaf_class)
@@ -19,8 +19,8 @@ def load_original_images(load_folder, progress=None, task=None):
                 img_path = os.path.join(class_folder, image_file)
                 images_dict[leaf_class][image_file] = cv2.imread(img_path)
 
-        if task is not None:
-            progress.update(task, advance=1)
+                if task is not None:
+                    progress.update(task, advance=1)
 
     return images_dict
 
@@ -29,7 +29,7 @@ def load_images(load_folder, progress=None, task=None):
     images_dict = {}
 
     if task is not None:
-        progress.update(task, total=len(os.listdir(load_folder)))
+        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder)))
 
     for leaf_class in os.listdir(load_folder):
         class_folder = os.path.join(load_folder, leaf_class)
@@ -55,8 +55,8 @@ def load_images(load_folder, progress=None, task=None):
                 image_basename, enhancement = image_basename.split('_')
                 images_dict[leaf_class][image_basename][enhancement] = cv2.imread(img_path)
 
-        if task is not None:
-            progress.update(task, advance=1)
+            if task is not None:
+                progress.update(task, advance=1)
 
     return images_dict
 
@@ -65,7 +65,7 @@ def save_images(images, save_folder, progress=None, task=None):
     os.makedirs(save_folder, exist_ok=True)
 
     if task is not None:
-        progress.update(task, total=len(images))
+        progress.update(task, total=sum(len(variations) for class_images in images.values() for variations in class_images.values()))
 
     for class_name, class_images in images.items():
         class_folder = os.path.join(save_folder, class_name)
@@ -81,8 +81,8 @@ def save_images(images, save_folder, progress=None, task=None):
 
                 cv2.imwrite(filepath, img)
 
-        if task is not None:
-            progress.update(task, advance=1)
+                if task is not None:
+                    progress.update(task, advance=1)
 
 
 # loaded original imgs
