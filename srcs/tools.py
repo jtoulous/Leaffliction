@@ -5,11 +5,55 @@ import cv2
 def load_original_images(load_folder, progress=None, task=None):
     images_dict = {}
 
+    # Case 1: Direct image file path (leaves/category/imagefile)
+    if os.path.isfile(load_folder):
+        parent_dir = os.path.dirname(load_folder)
+        class_name = os.path.basename(parent_dir)
+        image_file = os.path.basename(load_folder)
+
+        if task is not None:
+            progress.update(task, total=1)
+
+        images_dict[class_name] = {}
+        images_dict[class_name][image_file] = cv2.imread(load_folder)
+
+        if task is not None:
+            progress.update(task, advance=1)
+
+        return images_dict
+
+    # Case 2: Category folder path (leaves/category)
+    if os.path.isdir(load_folder):
+        contents = os.listdir(load_folder)
+        if contents and all(os.path.isfile(os.path.join(load_folder, item)) for item in contents):
+            class_name = os.path.basename(load_folder.rstrip('/\\'))
+
+            if task is not None:
+                progress.update(task, total=len(contents))
+
+            images_dict[class_name] = {}
+
+            for image_file in contents:
+                if len(image_file.split('_')) == 1:
+                    img_path = os.path.join(load_folder, image_file)
+                    images_dict[class_name][image_file] = cv2.imread(img_path)
+
+                    if task is not None:
+                        progress.update(task, advance=1)
+
+            return images_dict
+
+    # Case 3: Root folder path (leaves/)
+    print("Loading images from root folder:", load_folder)
     if task is not None:
-        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder)))
+        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder) if os.path.isdir(os.path.join(load_folder, leaf_class))))
 
     for leaf_class in os.listdir(load_folder):
         class_folder = os.path.join(load_folder, leaf_class)
+
+        if not os.path.isdir(class_folder):
+            continue
+
         class_basename = os.path.splitext(leaf_class)[0]
 
         images_dict[class_basename] = {}
@@ -28,11 +72,72 @@ def load_original_images(load_folder, progress=None, task=None):
 def load_images(load_folder, progress=None, task=None):
     images_dict = {}
 
+    # Case 1: Direct image file path (leaves/category/imagefile)
+    if os.path.isfile(load_folder):
+        parent_dir = os.path.dirname(load_folder)
+        class_name = os.path.basename(parent_dir)
+        image_file = os.path.basename(load_folder)
+        image_basename = os.path.splitext(image_file)[0]
+
+        if task is not None:
+            progress.update(task, total=1)
+
+        images_dict[class_name] = {}
+
+        if len(image_basename.split('_')) == 1:
+            images_dict[class_name][image_basename] = {}
+            images_dict[class_name][image_basename]['original'] = cv2.imread(load_folder)
+        else:
+            base_name, enhancement = image_basename.split('_', 1)
+            if images_dict[class_name].get(base_name) is None:
+                images_dict[class_name][base_name] = {}
+            images_dict[class_name][base_name][enhancement] = cv2.imread(load_folder)
+
+        if task is not None:
+            progress.update(task, advance=1)
+
+        return images_dict
+
+    # Case 2: Category folder path (leaves/category)
+    if os.path.isdir(load_folder):
+        contents = os.listdir(load_folder)
+        if contents and all(os.path.isfile(os.path.join(load_folder, item)) for item in contents):
+            class_name = os.path.basename(load_folder.rstrip('/\\'))
+
+            if task is not None:
+                progress.update(task, total=len(contents))
+
+            images_dict[class_name] = {}
+
+            for image_file in contents:
+                img_path = os.path.join(load_folder, image_file)
+                image_basename = os.path.splitext(image_file)[0]
+
+                if len(image_basename.split('_')) == 1:
+                    if images_dict[class_name].get(image_basename) is None:
+                        images_dict[class_name][image_basename] = {}
+                    images_dict[class_name][image_basename]['original'] = cv2.imread(img_path)
+                else:
+                    base_name, enhancement = image_basename.split('_', 1)
+                    if images_dict[class_name].get(base_name) is None:
+                        images_dict[class_name][base_name] = {}
+                    images_dict[class_name][base_name][enhancement] = cv2.imread(img_path)
+
+                if task is not None:
+                    progress.update(task, advance=1)
+
+            return images_dict
+
+    # Case 3: Root folder path (leaves/)
     if task is not None:
-        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder)))
+        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder) if os.path.isdir(os.path.join(load_folder, leaf_class))))
 
     for leaf_class in os.listdir(load_folder):
         class_folder = os.path.join(load_folder, leaf_class)
+
+        if not os.path.isdir(class_folder):
+            continue
+
         class_basename = os.path.splitext(leaf_class)[0]
 
         images_dict[class_basename] = {}
@@ -49,11 +154,10 @@ def load_images(load_folder, progress=None, task=None):
                 images_dict[leaf_class][image_basename]['original'] = cv2.imread(img_path)
 
             else:
-                if images_dict[class_basename].get(image_basename) is None:
-                    images_dict[leaf_class][image_basename] = {}
-
-                image_basename, enhancement = image_basename.split('_')
-                images_dict[leaf_class][image_basename][enhancement] = cv2.imread(img_path)
+                base_name, enhancement = image_basename.split('_', 1)
+                if images_dict[class_basename].get(base_name) is None:
+                    images_dict[leaf_class][base_name] = {}
+                images_dict[leaf_class][base_name][enhancement] = cv2.imread(img_path)
 
             if task is not None:
                 progress.update(task, advance=1)
