@@ -1,4 +1,4 @@
-altair==6.0.0
+altair==5.0.0rc1
 annotated-types==0.7.0
 attrs==25.4.0
 click==8.3.1
@@ -63,7 +63,6 @@ tornado==6.5.2
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.2
-plantcv
 urllib3==2.5.0
 vl-convert-python==1.8.0
 xarray==2025.6.1
