@@ -44,7 +44,6 @@ def load_original_images(load_folder, progress=None, task=None):
             return images_dict
 
     # Case 3: Root folder path (leaves/)
-    print("Loading images from root folder:", load_folder)
     if task is not None:
         progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder) if os.path.isdir(os.path.join(load_folder, leaf_class))))
 
