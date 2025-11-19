@@ -26,6 +26,7 @@ class ImgTransformator:
             'roi_objects': self.roi_objects,
             'analyze_object': self.analyze_object,
             'pseudolandmarks': self.pseudolandmarks,
+            'spots_isolation': self.spots_isolation,
         }
 
         if image:
@@ -227,6 +228,38 @@ class ImgTransformator:
     def pseudolandmarks(self, img):
         transformed_img = img.copy()
         return transformed_img
+
+
+    def spots_isolation(self, img):
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        
+        # Mask large pour trouver TOUS les marrons possibles
+        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30]), np.array([40, 255, 220]))
+        
+        # Calculer l'histogramme des valeurs (V) des pixels marrons
+        brown_pixels_v = hsv[:,:,2][mask_all_brown > 0]
+        
+        if len(brown_pixels_v) > 0:
+            median_v = np.median(brown_pixels_v)
+            v_range = 40
+            lower_v = max(30, median_v - v_range)
+            upper_v = min(200, median_v + v_range)
+        else:
+            lower_v, upper_v = 50, 150
+        
+        lower_brown = np.array([0, 30, lower_v])
+        upper_brown = np.array([30, 220, upper_v])
+        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+        
+        # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
+        kernel = np.ones((5,5), np.uint8)
+        mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
+        mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
+        
+        result = np.ones_like(img) * 255
+        result[mask_brown > 0] = img[mask_brown > 0]
+    
+        return result
 
 #####                                                      #####
 ################################################################
