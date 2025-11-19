@@ -3,6 +3,17 @@ import cv2
 
 
 def load_original_images(load_folder, progress=None, task=None):
+    """
+    Load original images from the specified folder structure.
+
+    Args:
+        load_folder (str): Path to the folder or image file.
+        progress (Progress, optional): Progress tracking object.
+        task (Task, optional): Task identifier for progress tracking.
+
+    Returns:
+        dict: A nested dictionary with structure {class_name: {image_file: image_data}}
+    """
     images_dict = {}
 
     # Case 1: Direct image file path (leaves/category/imagefile)
@@ -69,6 +80,17 @@ def load_original_images(load_folder, progress=None, task=None):
 
 
 def load_images(load_folder, progress=None, task=None):
+    """
+    Load all images from the specified folder structure.
+
+    Args:
+        load_folder (str): Path to the folder or image file.
+        progress (Progress, optional): Progress tracking object.
+        task (Task, optional): Task identifier for progress tracking.
+
+    Returns:
+        dict: A nested dictionary with structure {class_name: {image_file: {enhancement_type: image_data}}}
+    """
     images_dict = {}
 
     # Case 1: Direct image file path (leaves/category/imagefile)
@@ -165,6 +187,15 @@ def load_images(load_folder, progress=None, task=None):
 
 
 def save_images(images, save_folder, progress=None, task=None):
+    """
+    Save images to the specified folder structure.
+
+    Args:
+        images (dict): A nested dictionary with structure {class_name: {image_file: {enhancement_type: image_data}}}
+        save_folder (str): Path to the folder where images will be saved.
+        progress (Progress, optional): Progress tracking object.
+        task (Task, optional): Task identifier for progress tracking.
+    """
     os.makedirs(save_folder, exist_ok=True)
 
     if task is not None:
