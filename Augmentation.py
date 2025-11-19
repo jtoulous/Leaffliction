@@ -269,6 +269,7 @@ def ArgumentParsing():
 
 def range_processing(images, range_nb=None, range_percent=100):
     all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
+    np.random.shuffle(all_images)
     all_images = all_images[:range_nb] if range_nb is not None else all_images
 
     limit = int(len(all_images) * range_percent / 100)
