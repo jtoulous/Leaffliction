@@ -1,17 +1,13 @@
 import cv2
 import numpy as np
 import argparse as ap
-# import plantcv as pcv
 
 from plantcv import plantcv as pcv
+from plantcv.plantcv.homology.x_axis_pseudolandmark import x_axis_pseudolandmarks
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
 from srcs.tools import load_original_images, save_images
 
-
-################################################################
-################################################################
-#####                Transformator Class                   #####
 
 class ImgTransformator:
     def __init__(self, images_structure):
@@ -79,7 +75,6 @@ class ImgTransformator:
 
         return self.images_structure
 
-
     def gaussian_blur(self, img, k_size=(3, 3)):
         # Convertir en HSV pour mieux segmenter
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -98,7 +93,7 @@ class ImgTransformator:
         mask = cv2.bitwise_or(mask_green, mask_brown)
 
         # Nettoyer le mask
-        kernel = np.ones((5,5), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
         # Trouver les contours de la feuilles
@@ -126,7 +121,6 @@ class ImgTransformator:
         blurred_bgr = cv2.cvtColor(blurred, cv2.COLOR_GRAY2BGR)
         return blurred_bgr
 
-
     def mask(self, img):
         # Convertir en HSV pour mieux segmenter
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -151,8 +145,109 @@ class ImgTransformator:
 
         return result
 
+    def roi_objects(self, image):
+        transformed_image = image.copy()
+        contours, _ = self._find_largest_contour(transformed_image)
 
-    def roi_objects(self, img):
+        if contours:
+            # Get the largest contour by area
+            largest_contour = max(contours, key=cv2.contourArea)
+
+            # Draw the leaf contour in green (THICKER for visibility)
+            cv2.drawContours(transformed_image, [largest_contour], -1, (0, 255, 0), 2)
+
+            # Get bounding rectangle around the leaf
+            x, y, w, h = cv2.boundingRect(largest_contour)
+
+            # Add padding
+            padding = 20
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            w = min(transformed_image.shape[1] - x, w + 2*padding)
+            h = min(transformed_image.shape[0] - y, h + 2*padding)
+
+            # Draw the bounding rectangle in blue
+            cv2.rectangle(transformed_image, (x, y), (x + w, y + h), (255, 0, 0), 3)
+
+        return transformed_image
+
+    def analyze_object(self, image):
+        transformed_image = image.copy()
+        return transformed_image
+
+    def pseudolandmarks(self, image):
+        transformed_image = image.copy()
+        contours, leaf_mask = self._find_largest_contour(transformed_image)
+
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
+
+            cv2.drawContours(transformed_image, [largest_contour], -1, (0, 255, 0), 2)
+
+            # Use PlantCV's x_axis_pseudolandmarks function (correct signature: img, mask)
+            # This function generates pseudolandmarks along horizontal slices
+            landmarks_result = x_axis_pseudolandmarks(img=transformed_image, mask=leaf_mask)
+
+            # Check if the result is valid (not "NA")
+            if not (isinstance(landmarks_result, np.ndarray) and landmarks_result.dtype.kind == 'U'):
+                top, bottom, center_v = landmarks_result
+
+                # Draw the pseudolandmarks
+                # Top landmarks (upper leaf boundary)
+                if top is not None and len(top) > 0:
+                    for point in top:
+                        # Convert to integer tuple (x, y)
+                        pt = (int(point[0][0]), int(point[0][1]))
+                        cv2.circle(transformed_image, pt, 4, (0, 0, 255), -1)  # Red - top boundary
+
+                # Bottom landmarks (lower leaf boundary)
+                if bottom is not None and len(bottom) > 0:
+                    for point in bottom:
+                        # Convert to integer tuple (x, y)
+                        pt = (int(point[0][0]), int(point[0][1]))
+                        cv2.circle(transformed_image, pt, 4, (255, 0, 0), -1)  # Blue - bottom boundary
+
+                # Center vertical landmarks (leaf midline)
+                if center_v is not None and len(center_v) > 0:
+                    for point in center_v:
+                        # Convert to integer tuple (x, y)
+                        pt = (int(point[0][0]), int(point[0][1]))
+                        cv2.circle(transformed_image, pt, 4, (255, 255, 0), -1)  # Green - centerline
+
+        return transformed_image
+
+    def spots_isolation(self, img):
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        # Mask large pour trouver TOUS les marrons possibles
+        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30]), np.array([40, 255, 220]))
+
+        # Calculer l'histogramme des valeurs (V) des pixels marrons
+        brown_pixels_v = hsv[:,:,2][mask_all_brown > 0]
+
+        if len(brown_pixels_v) > 0:
+            median_v = np.median(brown_pixels_v)
+            v_range = 40
+            lower_v = max(30, median_v - v_range)
+            upper_v = min(200, median_v + v_range)
+        else:
+            lower_v, upper_v = 50, 150
+
+        lower_brown = np.array([0, 30, lower_v])
+        upper_brown = np.array([30, 220, upper_v])
+        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+
+        # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
+        kernel = np.ones((5,5), np.uint8)
+        mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
+        mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
+
+        result = np.ones_like(img) * 255
+        result[mask_brown > 0] = img[mask_brown > 0]
+
+        return result
+
+    def _find_largest_contour(self, img):
         # Apply mask to isolate the leaf - EXCLUDE SHADOWS
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -186,87 +281,7 @@ class ImgTransformator:
         # Find ALL contours and select the largest
         contours, _ = cv2.findContours(leaf_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        result = img.copy()
-
-        if contours:
-            # Get the largest contour by area
-            largest_contour = max(contours, key=cv2.contourArea)
-
-            # Optional: smooth the contour using convex hull or approxPolyDP
-            # Uncomment one of these if contour is too jagged:
-            # largest_contour = cv2.convexHull(largest_contour)
-            epsilon = 0.001 * cv2.arcLength(largest_contour, True)
-            largest_contour = cv2.approxPolyDP(largest_contour, epsilon, True)
-
-            # Get bounding rectangle around the leaf
-            x, y, w, h = cv2.boundingRect(largest_contour)
-
-            # Add padding
-            padding = 20
-            x = max(0, x - padding)
-            y = max(0, y - padding)
-            w = min(img.shape[1] - x, w + 2*padding)
-            h = min(img.shape[0] - y, h + 2*padding)
-
-            # Use PlantCV's ROI from the bounding box
-            roi = pcv.roi.rectangle(img=result, x=x, y=y, h=h, w=w)
-
-            # Draw the leaf contour in green (THICKER for visibility)
-            cv2.drawContours(result, [largest_contour], -1, (0, 255, 0), 2)
-
-            # Draw the bounding rectangle in blue
-            cv2.rectangle(result, (x, y), (x + w, y + h), (255, 0, 0), 3)
-
-        return result
-
-
-    def analyze_object(self, img):
-        transformed_img = img.copy()
-        return transformed_img
-
-
-    def pseudolandmarks(self, img):
-        transformed_img = img.copy()
-        return transformed_img
-
-
-    def spots_isolation(self, img):
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        
-        # Mask large pour trouver TOUS les marrons possibles
-        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30]), np.array([40, 255, 220]))
-        
-        # Calculer l'histogramme des valeurs (V) des pixels marrons
-        brown_pixels_v = hsv[:,:,2][mask_all_brown > 0]
-        
-        if len(brown_pixels_v) > 0:
-            median_v = np.median(brown_pixels_v)
-            v_range = 40
-            lower_v = max(30, median_v - v_range)
-            upper_v = min(200, median_v + v_range)
-        else:
-            lower_v, upper_v = 50, 150
-        
-        lower_brown = np.array([0, 30, lower_v])
-        upper_brown = np.array([30, 220, upper_v])
-        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
-        
-        # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
-        kernel = np.ones((5,5), np.uint8)
-        mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
-        mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
-        
-        result = np.ones_like(img) * 255
-        result[mask_brown > 0] = img[mask_brown > 0]
-    
-        return result
-
-#####                                                      #####
-################################################################
-
-
-
-
+        return contours, leaf_mask
 
 
 def ArgumentParsing():
