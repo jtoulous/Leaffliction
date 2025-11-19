@@ -12,17 +12,23 @@ class ImgAugmentation:
 
         return
 
-    def transform(self, image=None, progress=None, task=None):
+    def transform(self, image=None, progress=None, task=None, display=False):
         if image:
-            self.rotation(image)
-            self.blur(image)
-            self.contrast(image)
-            self.scaling(image)
-            self.illumination(image)
-            self.projective(image)
+            result = []
+            result.append(self.rotation(image))
+            result.append(self.blur(image))
+            result.append(self.contrast(image))
+            result.append(self.scaling(image))
+            result.append(self.illumination(image))
+            result.append(self.projective(image))
+            if display:
+                for idx, img in enumerate(result):
+                    cv2.imshow(f"Augmented Image {idx+1}", img)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
         else:
             if task is not None:
-                progress.update(task, total=len(self.images_structure))
+                progress.update(task, total=sum(len(imgs) for imgs in self.images_structure.values()))
 
             for category in self.images_structure:
 
@@ -41,8 +47,18 @@ class ImgAugmentation:
                         'projective': self.projective(image),
                     }
 
+                    if task is not None:
+                        progress.update(task, advance=1)
+
+                if display:
+                    for img_key in self.images_structure[category]:
+                        augmented_images = self.images_structure[category][img_key]
+                        for aug_type, aug_image in augmented_images.items():
+                            cv2.imshow(f"{category} - {img_key} - {aug_type}", aug_image)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+
                 if task is not None:
-                    progress.update(task, advance=1)
                     progress.update(task, description=f"↪ Images augmentation")
 
         return self.images_structure
@@ -199,16 +215,20 @@ class ImgAugmentation:
 def ArgumentParsing():
     parser = ap.ArgumentParser()
     parser.add_argument(
-        '--load_folder',
+        '--load-folder',
         type=str,
         default='data/leaves',
         help='Folder with original images (default: data/leaves)')
     parser.add_argument(
-        '--save_folder',
+        '--save-folder',
         type=str,
         default='data/leaves_preprocessed',
         help='Folder to save augmented images \
               (default: data/leaves_preprocessed)')
+    parser.add_argument(
+        '--display',
+        action='store_true',
+        help='Display augmented images during processing (default: False)')
     parser.add_argument(
         '--range',
         type=int,
@@ -249,12 +269,13 @@ if __name__ == '__main__':
             # Augment images
             images_augment_task = progress.add_task("↪ Images augmentation", total=0)
             augmentator = ImgAugmentation(images)
-            augmented_images = augmentator.transform(progress=progress, task=images_augment_task)
+            augmented_images = augmentator.transform(progress=progress, task=images_augment_task, display=args.display)
             progress.update(global_task, advance=1)
 
             # Save augmented images
-            images_save_task = progress.add_task("↪ Save augmented images", total=0)
-            save_images(augmented_images, args.save_folder, progress=progress, task=images_save_task)
+            if args.save_folder not in [None, '', 'None']:
+                images_save_task = progress.add_task("↪ Save augmented images", total=0)
+                save_images(augmented_images, args.save_folder, progress=progress, task=images_save_task)
             progress.update(global_task, advance=1)
 
     except Exception as error:
