@@ -19,15 +19,19 @@ class ImgTransformator:
 
         return
 
-    def transform(self, image=None, progress=None, task=None, display=False):
+    def transform(self, image=None, progress=None, task=None, display=False, transform=None):
+        function_map = {
+            'gaussian_blur': self.gaussian_blur,
+            'mask': self.mask,
+            'roi_objects': self.roi_objects,
+            'analyze_object': self.analyze_object,
+            'pseudolandmarks': self.pseudolandmarks,
+        }
+
         if image:
             transformed_images = {}
             transformed_images['original'] = image
-            transformed_images['gaussian_blur'] = self.gaussian_blur(image)
-            transformed_images['mask'] = self.mask(image)
-            transformed_images['roi_objects'] = self.roi_objects(image)
-            transformed_images['analyze_object'] = self.analyze_object(image)
-            transformed_images['pseudolandmarks'] = self.pseudolandmarks(image)
+            transformed_images[transform] = function_map[transform](image) if transform in function_map else None
 
             if display:
                 for idx, img in enumerate(transformed_images.values()):
@@ -38,9 +42,7 @@ class ImgTransformator:
             return transformed_images
         else:
             if task is not None:
-                total = sum(len(imgs) for imgs in
-                            self.images_structure.values())
-                progress.update(task, total=total)
+                progress.update(task, total=sum(len(imgs) for imgs in self.images_structure.values()))
 
             for category in self.images_structure:
 
@@ -51,11 +53,7 @@ class ImgTransformator:
                     image = self.images_structure[category][img_key]
                     self.images_structure[category][img_key] = {
                         'original': image,
-                        'gaussian_blur': self.gaussian_blur(image),
-                        'mask': self.mask(image),
-                        'roi_objects': self.roi_objects(image),
-                        'analyze_object': self.analyze_object(image),
-                        'pseudolandmarks': self.pseudolandmarks(image),
+                        transform: function_map[transform](image) if transform in function_map else None,
                     }
 
                     if task is not None:
@@ -225,7 +223,12 @@ def ArgumentParsing():
         action='store_true',
         help='Display augmented images during processing (default: False)')
     parser.add_argument(
-        '--range',
+        '--range-nb',
+        type=int,
+        default=None,
+        help='Number of augmented images to process (default: None)')
+    parser.add_argument(
+        '--range-percent',
         type=int,
         default=100,
         help='Percentage of augmented images to process (default: 100)')
@@ -234,8 +237,30 @@ def ArgumentParsing():
         type=int,
         default=None,
         help='Random seed for reproducibility (default: None)')
+    parser.add_argument(
+        '--transform',
+        type=str,
+        choices=['gaussian_blur', 'mask', 'roi_objects', 'analyze_object', 'pseudolandmarks'],
+        default=None,
+        help='Transformation to apply to images (default: None)')
 
     return parser.parse_args()
+
+
+def range_processing(images, range_nb=None, range_percent=100):
+    all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
+    all_images = all_images[:range_nb] if range_nb is not None else all_images
+
+    limit = int(len(all_images) * range_percent / 100)
+    all_images = all_images[:limit]
+
+    images = {}
+    for cat, img_key, img in all_images:
+        if cat not in images:
+            images[cat] = {}
+        images[cat][img_key] = img
+
+    return images
 
 
 if __name__ == '__main__':
@@ -255,7 +280,7 @@ if __name__ == '__main__':
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
             images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
-            images = {cat: dict(list(imgs.items())[:int(len(imgs) * args.range / 100)]) for cat, imgs in images.items()}
+            images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
             np.random.seed(args.seed)
@@ -263,7 +288,7 @@ if __name__ == '__main__':
             # Transform images
             images_transform_task = progress.add_task("↪ Images Transformation", total=0)
             transformator = ImgTransformator(images)
-            transformed_images = transformator.transform(progress=progress, task=images_transform_task, display=args.display)
+            transformed_images = transformator.transform(progress=progress, task=images_transform_task, display=args.display, transform=args.transform)
             progress.update(global_task, advance=1)
 
             # Save transformed images
