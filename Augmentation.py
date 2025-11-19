@@ -13,16 +13,24 @@ class ImgAugmentation:
 
         return
 
-    def augment(self, image=None, progress=None, task=None, display=False):
+    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None):
+        function_map = {
+            'rotation': self.rotation,
+            'blur': self.blur,
+            'contrast': self.contrast,
+            'scaling': self.scaling,
+            'illumination': self.illumination,
+            'projective': self.projective,
+        }
+
         if image:
             augmented_images = {}
             augmented_images['original'] = image
-            augmented_images['rotation'] = self.rotation(image)
-            augmented_images['blur'] = self.blur(image)
-            augmented_images['contrast'] = self.contrast(image)
-            augmented_images['scaling'] = self.scaling(image)
-            augmented_images['illumination'] = self.illumination(image)
-            augmented_images['projective'] = self.projective(image)
+            if augmentation in function_map:
+                augmented_images[augmentation] = function_map[augmentation](image)
+            else:
+                for aug_name, aug_function in function_map.items():
+                    augmented_images[aug_name] = aug_function(image)
 
             if display:
                 for idx, img in enumerate(augmented_images.values()):
@@ -46,12 +54,11 @@ class ImgAugmentation:
                     image = self.images_structure[category][img_key]
                     self.images_structure[category][img_key] = {
                         'original': image,
-                        'rotation': self.rotation(image),
-                        'blur': self.blur(image),
-                        'contrast': self.contrast(image),
-                        'scaling': self.scaling(image),
-                        'illumination': self.illumination(image),
-                        'projective': self.projective(image),
+                        **(
+                            {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
+                            if augmentation is None else
+                            {augmentation: function_map[augmentation](image)}
+                        )
                     }
 
                     if task is not None:
@@ -236,17 +243,44 @@ def ArgumentParsing():
         action='store_true',
         help='Display augmented images during processing (default: False)')
     parser.add_argument(
-        '--range',
+        '--range-nb',
+        type=int,
+        default=None,
+        help='Number of images to process (default: None)')
+    parser.add_argument(
+        '--range-percent',
         type=int,
         default=100,
-        help='Percentage of augmented images to process (default: 100)')
+        help='Percentage of images to process (default: 100)')
     parser.add_argument(
         '--seed',
         type=int,
         default=None,
         help='Random seed for reproducibility (default: None)')
+    parser.add_argument(
+        '--augmentation',
+        type=str,
+        choices=['rotation', 'blur', 'contrast', 'scaling', 'illumination', 'projective'],
+        default=None,
+        help='Augmentation to apply to images (default: None)')
 
     return parser.parse_args()
+
+
+def range_processing(images, range_nb=None, range_percent=100):
+    all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
+    all_images = all_images[:range_nb] if range_nb is not None else all_images
+
+    limit = int(len(all_images) * range_percent / 100)
+    all_images = all_images[:limit]
+
+    images = {}
+    for cat, img_key, img in all_images:
+        if cat not in images:
+            images[cat] = {}
+        images[cat][img_key] = img
+
+    return images
 
 
 if __name__ == '__main__':
@@ -266,7 +300,7 @@ if __name__ == '__main__':
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
             images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
-            images = {cat: dict(list(imgs.items())[:int(len(imgs) * args.range / 100)]) for cat, imgs in images.items()}
+            images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
             np.random.seed(args.seed)
@@ -274,7 +308,7 @@ if __name__ == '__main__':
             # Augment images
             images_augment_task = progress.add_task("↪ Images augmentation", total=0)
             augmentator = ImgAugmentation(images)
-            augmented_images = augmentator.augment(progress=progress, task=images_augment_task, display=args.display)
+            augmented_images = augmentator.augment(progress=progress, task=images_augment_task, display=args.display, augmentation=args.augmentation)
             progress.update(global_task, advance=1)
 
             # Save augmented images

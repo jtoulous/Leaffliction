@@ -31,7 +31,11 @@ class ImgTransformator:
         if image:
             transformed_images = {}
             transformed_images['original'] = image
-            transformed_images[transform] = function_map[transform](image) if transform in function_map else None
+            if transform in function_map:
+                transformed_images[transform] = function_map[transform](image)
+            else:
+                for trans_name, trans_function in function_map.items():
+                    transformed_images[trans_name] = trans_function(image)
 
             if display:
                 for idx, img in enumerate(transformed_images.values()):
@@ -53,7 +57,11 @@ class ImgTransformator:
                     image = self.images_structure[category][img_key]
                     self.images_structure[category][img_key] = {
                         'original': image,
-                        transform: function_map[transform](image) if transform in function_map else None,
+                        **(
+                            {trans_name: trans_function(image) for trans_name, trans_function in function_map.items()}
+                            if transform is None else
+                            {transform: function_map[transform](image)}
+                        )
                     }
 
                     if task is not None:
@@ -226,12 +234,12 @@ def ArgumentParsing():
         '--range-nb',
         type=int,
         default=None,
-        help='Number of augmented images to process (default: None)')
+        help='Number of images to process (default: None)')
     parser.add_argument(
         '--range-percent',
         type=int,
         default=100,
-        help='Percentage of augmented images to process (default: 100)')
+        help='Percentage of images to process (default: 100)')
     parser.add_argument(
         '--seed',
         type=int,
