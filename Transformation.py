@@ -1,4 +1,5 @@
 import argparse as ap
+import plantcv as pcv
 
 from srcs.tools import load_original_images, save_images
 
@@ -16,7 +17,7 @@ class ImgTransformator:
 
         for class_name, class_imgs in img_dict.items():
             transformed_dict[class_name] = {}
-            
+
             for image_name, img in class_imgs.items():
                 transformed_dict[class_name][image_name] = {}
 
@@ -66,7 +67,7 @@ def ArgumentParsing():
     parser = ap.ArgumentParser()
     parser.add_argument('-load_folder', type=str, default='../data/leaves', help='load folder')
     parser.add_argument('-save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
-    
+
     return parser.parse_args()
 
 
