@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 import argparse as ap
 
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+
 from srcs.tools import load_original_images, save_images
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn # type: ignore
 
 
 class ImgAugmentation:
@@ -12,28 +13,34 @@ class ImgAugmentation:
 
         return
 
-    def transform(self, image=None, progress=None, task=None, display=False):
+    def augment(self, image=None, progress=None, task=None, display=False):
         if image:
-            result = []
-            result.append(self.rotation(image))
-            result.append(self.blur(image))
-            result.append(self.contrast(image))
-            result.append(self.scaling(image))
-            result.append(self.illumination(image))
-            result.append(self.projective(image))
+            augmented_images = {}
+            augmented_images['original'] = image
+            augmented_images['rotation'] = self.rotation(image)
+            augmented_images['blur'] = self.blur(image)
+            augmented_images['contrast'] = self.contrast(image)
+            augmented_images['scaling'] = self.scaling(image)
+            augmented_images['illumination'] = self.illumination(image)
+            augmented_images['projective'] = self.projective(image)
+
             if display:
-                for idx, img in enumerate(result):
+                for idx, img in enumerate(augmented_images.values()):
                     cv2.imshow(f"Augmented Image {idx+1}", img)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
+
+            return augmented_images
         else:
             if task is not None:
-                progress.update(task, total=sum(len(imgs) for imgs in self.images_structure.values()))
+                total = sum(len(imgs) for imgs in
+                            self.images_structure.values())
+                progress.update(task, total=total)
 
             for category in self.images_structure:
 
                 if task is not None:
-                    progress.update(task, description=f"↪ Augmenting images: {category}")
+                    progress.update(task, description=f"Images augmentation: {category}")
 
                 for img_key in self.images_structure[category]:
                     image = self.images_structure[category][img_key]
@@ -50,16 +57,15 @@ class ImgAugmentation:
                     if task is not None:
                         progress.update(task, advance=1)
 
-                if display:
-                    for img_key in self.images_structure[category]:
+                    if display:
                         augmented_images = self.images_structure[category][img_key]
                         for aug_type, aug_image in augmented_images.items():
                             cv2.imshow(f"{category} - {img_key} - {aug_type}", aug_image)
-                    cv2.waitKey(0)
-                    cv2.destroyAllWindows()
+                        cv2.waitKey(0)
+                        cv2.destroyAllWindows()
 
                 if task is not None:
-                    progress.update(task, description=f"↪ Images augmentation")
+                    progress.update(task, description="↪ Images augmentation")
 
         return self.images_structure
 
@@ -260,8 +266,7 @@ if __name__ == '__main__':
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
             images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
-            images = {cat: dict(list(imgs.items())[:int(len(imgs)
-                    * args.range / 100)]) for cat, imgs in images.items()}
+            images = {cat: dict(list(imgs.items())[:int(len(imgs) * args.range / 100)]) for cat, imgs in images.items()}
             progress.update(global_task, advance=1)
 
             np.random.seed(args.seed)
@@ -269,7 +274,7 @@ if __name__ == '__main__':
             # Augment images
             images_augment_task = progress.add_task("↪ Images augmentation", total=0)
             augmentator = ImgAugmentation(images)
-            augmented_images = augmentator.transform(progress=progress, task=images_augment_task, display=args.display)
+            augmented_images = augmentator.augment(progress=progress, task=images_augment_task, display=args.display)
             progress.update(global_task, advance=1)
 
             # Save augmented images

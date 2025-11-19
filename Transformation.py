@@ -3,7 +3,7 @@ import numpy as np
 import argparse as ap
 import plantcv as pcv
 
-
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
 from srcs.tools import load_original_images, save_images
 
@@ -13,26 +13,63 @@ from srcs.tools import load_original_images, save_images
 #####                Transformator Class                   #####
 
 class ImgTransformator:
-    def __init__(self):
+    def __init__(self, images_structure):
+        self.images_structure = images_structure
+
         return
 
-    def transform(self, img_dict):
-        transformed_dict = {}
+    def transform(self, image=None, progress=None, task=None, display=False):
+        if image:
+            transformed_images = {}
+            transformed_images['original'] = image
+            transformed_images['gaussian_blur'] = self.gaussian_blur(image)
+            transformed_images['mask'] = self.mask(image)
+            transformed_images['roi_objects'] = self.roi_objects(image)
+            transformed_images['analyze_object'] = self.analyze_object(image)
+            transformed_images['pseudolandmarks'] = self.pseudolandmarks(image)
 
-        for class_name, class_imgs in img_dict.items():
-            transformed_dict[class_name] = {}
+            if display:
+                for idx, img in enumerate(transformed_images.values()):
+                    cv2.imshow(f"Transformed Image {idx+1}", img)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
-            for image_name, img in class_imgs.items():
-                transformed_dict[class_name][image_name] = {}
+            return transformed_images
+        else:
+            if task is not None:
+                total = sum(len(imgs) for imgs in
+                            self.images_structure.values())
+                progress.update(task, total=total)
 
-                transformed_dict[class_name][image_name]['original'] = img
-                transformed_dict[class_name][image_name]['gaussian_blur'] = self.gaussian_blur(img)
-                transformed_dict[class_name][image_name]['mask'] = self.mask(img)
-#                transformed_dict[class_name][image_name]['roi_objects'] = self.roi_objects(img)
-#                transformed_dict[class_name][image_name]['analyze_object'] = self.analyze_object(img)
-#                transformed_dict[class_name][image_name]['pseudolandmarks'] = self.pseudolandmarks(img)
+            for category in self.images_structure:
 
-        return transformed_dict
+                if task is not None:
+                    progress.update(task, description=f"Images transformation: {category}")
+
+                for img_key in self.images_structure[category]:
+                    image = self.images_structure[category][img_key]
+                    self.images_structure[category][img_key] = {
+                        'original': image,
+                        'gaussian_blur': self.gaussian_blur(image),
+                        'mask': self.mask(image),
+                        'roi_objects': self.roi_objects(image),
+                        'analyze_object': self.analyze_object(image),
+                        'pseudolandmarks': self.pseudolandmarks(image),
+                    }
+
+                    if task is not None:
+                        progress.update(task, advance=1)
+
+                    if display:
+                        for idx, img in enumerate(self.images_structure[category][img_key].values()):
+                            cv2.imshow(f"Transformed Image {idx+1}", img)
+                        cv2.waitKey(0)
+                        cv2.destroyAllWindows()
+
+                if task is not None:
+                    progress.update(task, description="↪ Images transformation")
+
+        return self.images_structure
 
 
     def gaussian_blur(self, img, k_size=(3, 3)):
@@ -86,31 +123,42 @@ class ImgTransformator:
     def mask(self, img):
         # Convertir en HSV pour mieux segmenter
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        
+
         # VERT TRES RESTRICTIF (seulement vert foncé)
         lower_green = np.array([25, 80, 30])    # saturation haute, value basse
         upper_green = np.array([85, 255, 100])  # value max basse
-        
+
         # MARRON TRES SOUPLE
         lower_brown = np.array([0, 20, 10])     # hue très large
         upper_brown = np.array([30, 255, 200])  # saturation/value larges
-        
+
         mask_green = cv2.inRange(hsv, lower_green, upper_green)
         mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
-        
-        # COMBINER 
+
+        # COMBINER
         leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
-        
+
         # RESULTAT
         result = np.ones_like(img) * 255
         result[leaf_mask > 0] = img[leaf_mask > 0]
-        
+
         return result
 
 
     def roi_objects(self, img):
-        transformed_img = img.copy()
-        return transformed_img
+        # Define a region of interest (ROI) to isolate the leaf object
+        # Create ROI as a rectangle covering the central area of the image
+        h, w = img.shape[:2]
+        roi = pcv.roi.rectangle(img=img, x=int(w*0.1), y=int(h*0.1),
+                                 h=int(h*0.8), w=int(w*0.8))
+
+        # Find objects (contours) within the ROI
+        roi_objects, hierarchy = pcv.roi_objects(img=img, roi_contour=roi[0],
+                                                  roi_hierarchy=roi[1],
+                                                  object_contour='all',
+                                                  obj_hierarchy='all')
+
+        return roi_objects
 
 
     def analyze_object(self, img):
@@ -132,25 +180,68 @@ class ImgTransformator:
 
 def ArgumentParsing():
     parser = ap.ArgumentParser()
-    parser.add_argument('-load_folder', type=str, default='../data/leaves', help='load folder')
-    parser.add_argument('-save_folder', type=str, default='../data/leaves_preprocessed', help='save folder')
+    parser.add_argument(
+        '--load-folder',
+        type=str,
+        default='data/leaves',
+        help='Folder with original images (default: data/leaves)')
+    parser.add_argument(
+        '--save-folder',
+        type=str,
+        default='data/leaves_preprocessed',
+        help='Folder to save augmented images \
+              (default: data/leaves_preprocessed)')
+    parser.add_argument(
+        '--display',
+        action='store_true',
+        help='Display augmented images during processing (default: False)')
+    parser.add_argument(
+        '--range',
+        type=int,
+        default=100,
+        help='Percentage of augmented images to process (default: 100)')
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=None,
+        help='Random seed for reproducibility (default: None)')
 
     return parser.parse_args()
-
-
-
 
 
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
 
-        images = load_original_images(args.load_folder)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            "[progress.percentage]{task.completed}/{task.total}",
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeElapsedColumn(),
+        ) as progress:
+            global_task = progress.add_task("Global Progress", total=3)
 
-        transformator = ImgTransformator()
-        transformed_images = transformator.transform(images)
+            # Load images
+            images_load_task = progress.add_task("↪ Load images", total=0)
+            images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+            images = {cat: dict(list(imgs.items())[:int(len(imgs) * args.range / 100)]) for cat, imgs in images.items()}
+            progress.update(global_task, advance=1)
 
-        save_images(transformed_images, args.save_folder)
+            np.random.seed(args.seed)
+
+            # Transform images
+            images_transform_task = progress.add_task("↪ Images Transformation", total=0)
+            transformator = ImgTransformator(images)
+            transformed_images = transformator.transform(progress=progress, task=global_task, display=args.display)
+            progress.update(global_task, advance=1)
+
+            # Save transformed images
+            if args.save_folder not in [None, '', 'None']:
+                images_save_task = progress.add_task("↪ Save transformed images", total=0)
+                save_images(transformed_images, args.save_folder, progress=progress, task=images_save_task)
+            progress.update(global_task, advance=1)
 
 
     except Exception as error:
