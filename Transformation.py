@@ -108,7 +108,6 @@ class ImgTransformator:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         result = cv2.bitwise_and(gray, gray, mask=filled_mask)
 
-        # AUGMENTER LE CONTRASTE (style IRM)
         # Égalisation d'histogramme pour renforcer les contrastes
         result_eq = cv2.equalizeHist(result)
 
