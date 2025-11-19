@@ -11,18 +11,37 @@ from srcs.tools import load_original_images, save_images
 
 class ImgTransformator:
     def __init__(self, images_structure):
+        """
+        Initialize the ImgTransformator with a given structure of images.
+
+        Args:
+            images_structure (dict): A dictionary containing images categorized by class names.
+        """
         self.images_structure = images_structure
 
         return
 
     def transform(self, image=None, progress=None, task=None, display=False, transform=None):
+        """
+        Apply transformations to images.
+
+        Args:
+            image (np.ndarray, optional): A single image to transform. If None, transforms all images in the structure.
+            progress (Progress, optional): Rich Progress object for tracking progress.
+            task (Task, optional): Rich Task object for updating progress.
+            display (bool, optional): Whether to display images during transformation.
+            transform (str, optional): Specific transformation to apply. If None, applies all transformations.
+
+        Returns:
+            dict: A dictionary containing transformed images.
+        """
         function_map = {
             'gaussian_blur': self.gaussian_blur,
             'mask': self.mask,
             'roi_objects': self.roi_objects,
-            'analyze_object': self.analyze_object,
             'pseudolandmarks': self.pseudolandmarks,
             'spots_isolation': self.spots_isolation,
+            'background_removal': self.background_removal,
         }
 
         if image:
@@ -75,55 +94,88 @@ class ImgTransformator:
 
         return self.images_structure
 
-    def gaussian_blur(self, img, k_size=(3, 3)):
-        # Convertir en HSV pour mieux segmenter
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    def gaussian_blur(self, image, k_size=(3, 3)):
+        """
+        Apply Gaussian blur to the leaf area of the image.
 
-        # mask vert
+        Args:
+            image (np.ndarray): Input image.
+            k_size (tuple, optional): Kernel size for Gaussian blur. Default is (3, 3).
+
+        Returns:
+            np.ndarray: Blurred image with leaf area enhanced.
+
+        Behavior:
+            - Segments the leaf using color thresholds in HSV space.
+            - Creates a filled mask of the leaf area.
+            - Applies histogram equalization to enhance contrast.
+            - Applies Gaussian blur to the enhanced leaf area.
+            - Returns the blurred image in BGR format.
+        """
+        transformed_image = image.copy()
+        hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
+
+        # Green mask
         lower_green = np.array([20, 30, 30])
         upper_green = np.array([90, 255, 255])
         mask_green = cv2.inRange(hsv, lower_green, upper_green)
 
-        # mask marron
+        # Brown mask
         lower_brown = np.array([5, 30, 10])
         upper_brown = np.array([25, 220, 180])
         mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
 
-        # combiner les deux mask
+        # Combine both masks
         mask = cv2.bitwise_or(mask_green, mask_brown)
 
-        # Nettoyer le mask
+        # Clean the mask
         kernel = np.ones((5, 5), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-        # Trouver les contours de la feuilles
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Find leaf contours
+        contours, _ = self._find_largest_contour(transformed_image)
 
-        # Créer un nouveau mask rempli
+        # Create a new filled mask
         filled_mask = np.zeros_like(mask)
         if contours:
-            # Prendre le plus grand contour (la feuille)
+            # Take the largest contour (the leaf)
             largest_contour = max(contours, key=cv2.contourArea)
-            # REMPLIR tout l'intérieur du contour
+            # Fill the entire inside of the contour
             cv2.fillPoly(filled_mask, [largest_contour], 255)
 
-        # Utiliser le mask rempli au lieu de celui par couleur
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        result = cv2.bitwise_and(gray, gray, mask=filled_mask)
+        # Use the filled mask instead of the color mask
+        transformed_image = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2GRAY)
+        transformed_image = cv2.bitwise_and(transformed_image, transformed_image, mask=filled_mask)
 
-        # Égalisation d'histogramme pour renforcer les contrastes
-        result_eq = cv2.equalizeHist(result)
+        # Histogram equalization to enhance contrast
+        transformed_image = cv2.equalizeHist(transformed_image)
 
-        # Appliquer le blur
-        blurred = cv2.GaussianBlur(result_eq, k_size, 0)
+        # Apply Gaussian blur
+        transformed_image = cv2.GaussianBlur(transformed_image, k_size, 0)
 
-        # Convertir en BGR pour sauvegarde
-        blurred_bgr = cv2.cvtColor(blurred, cv2.COLOR_GRAY2BGR)
-        return blurred_bgr
+        # Convert to BGR for saving
+        transformed_image = cv2.cvtColor(transformed_image, cv2.COLOR_GRAY2BGR)
 
-    def mask(self, img):
+        return transformed_image
+
+    def mask(self, image): # TODO: fine tune this one
+        """
+        Apply a mask to isolate leaf areas in the image.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Image with non-leaf areas masked out.
+
+        Behavior:
+            - Segments the leaf using strict color thresholds in HSV space.
+            - Creates a mask that includes only the leaf areas.
+            - Returns the masked image with non-leaf areas set to white.
+        """
+        transformed_image = image.copy()
         # Convertir en HSV pour mieux segmenter
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
 
         # VERT TRES RESTRICTIF (seulement vert foncé)
         lower_green = np.array([25, 80, 30])    # saturation haute, value basse
@@ -140,12 +192,28 @@ class ImgTransformator:
         leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
 
         # RESULTAT
-        result = np.ones_like(img) * 255
-        result[leaf_mask > 0] = img[leaf_mask > 0]
+        tmp = np.ones_like(transformed_image) * 255
+        tmp[leaf_mask > 0] = transformed_image[leaf_mask > 0]
 
-        return result
+        transformed_image = tmp
+
+        return transformed_image
 
     def roi_objects(self, image):
+        """
+        Draw the region of interest (ROI) around the leaf in the image.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Image with ROI drawn around the leaf.
+
+        Behavior:
+            - Finds the largest contour in the image (assumed to be the leaf).
+            - Draws the contour in green and a bounding rectangle in blue.
+            - Returns the image with the ROI highlighted.
+        """
         transformed_image = image.copy()
         contours, _ = self._find_largest_contour(transformed_image)
 
@@ -171,11 +239,22 @@ class ImgTransformator:
 
         return transformed_image
 
-    def analyze_object(self, image):
-        transformed_image = image.copy()
-        return transformed_image
-
     def pseudolandmarks(self, image):
+        """
+        Draw pseudolandmarks along the leaf's horizontal axis.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Image with pseudolandmarks drawn.
+
+        Behavior:
+            - Finds the largest contour in the image (assumed to be the leaf).
+            - Uses PlantCV's x_axis_pseudolandmarks to compute pseudolandmarks.
+            - Draws the top, bottom, and center vertical pseudolandmarks in different colors.
+            - Returns the image with pseudolandmarks highlighted.
+        """
         transformed_image = image.copy()
         contours, leaf_mask = self._find_largest_contour(transformed_image)
 
@@ -216,11 +295,27 @@ class ImgTransformator:
 
         return transformed_image
 
-    def spots_isolation(self, img):
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    def spots_isolation(self, image):
+        """
+        Isolate spots (brown areas) on the leaf.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Image with isolated spots.
+
+        Behavior:
+            - Converts the image to HSV color space.
+            - Dynamically determines brown color thresholds based on the image.
+            - Creates a mask for brown areas and applies morphological operations to enhance it.
+            - Returns the image with only the brown areas visible, non-brown areas set to white
+        """
+        transformed_image = image.copy()
+        hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
 
         # Mask large pour trouver TOUS les marrons possibles
-        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30]), np.array([40, 255, 220]))
+        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30], dtype=np.uint8), np.array([40, 255, 220], dtype=np.uint8))
 
         # Calculer l'histogramme des valeurs (V) des pixels marrons
         brown_pixels_v = hsv[:,:,2][mask_all_brown > 0]
@@ -228,13 +323,13 @@ class ImgTransformator:
         if len(brown_pixels_v) > 0:
             median_v = np.median(brown_pixels_v)
             v_range = 40
-            lower_v = max(30, median_v - v_range)
-            upper_v = min(200, median_v + v_range)
+            lower_v = int(max(30, median_v - v_range))
+            upper_v = int(min(200, median_v + v_range))
         else:
             lower_v, upper_v = 50, 150
 
-        lower_brown = np.array([0, 30, lower_v])
-        upper_brown = np.array([30, 220, upper_v])
+        lower_brown = np.array([0, 30, lower_v], dtype=np.uint8)
+        upper_brown = np.array([30, 220, upper_v], dtype=np.uint8)
         mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
 
         # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
@@ -242,14 +337,79 @@ class ImgTransformator:
         mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
         mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
 
-        result = np.ones_like(img) * 255
-        result[mask_brown > 0] = img[mask_brown > 0]
+        tmp = np.ones_like(transformed_image) * 255
+        tmp[mask_brown > 0] = transformed_image[mask_brown > 0]
 
-        return result
+        transformed_image = tmp
 
-    def _find_largest_contour(self, img):
+        return transformed_image
+
+    def background_removal(self, image):
+        """
+        Remove the background from the image, leaving only the leaf.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            np.ndarray: Image with background removed (white background).
+
+        Behavior:
+            - Finds the largest contour in the image (assumed to be the leaf).
+            - Creates a precise mask from the contour.
+            - Applies morphological operations and Gaussian blur to smooth edges.
+            - Returns the image with the leaf on a white background.
+        """
+        transformed_image = image.copy()
+        contours, _ = self._find_largest_contour(transformed_image)
+
+        if contours:
+            # Get the largest contour (the leaf)
+            largest_contour = max(contours, key=cv2.contourArea)
+
+            # Create a precise mask from the contour
+            precise_mask = np.zeros(transformed_image.shape[:2], dtype=np.uint8)
+
+            # Fill the contour to create a solid mask
+            cv2.drawContours(precise_mask, [largest_contour], -1, 255, thickness=cv2.FILLED)
+
+            # Optional: Apply morphological operations to smooth the edges
+            kernel = np.ones((3, 3), np.uint8)
+            # Slightly erode to remove any background artifacts on edges
+            precise_mask = cv2.erode(precise_mask, kernel, iterations=1)
+            # Then dilate back to restore size but with smoother edges
+            precise_mask = cv2.dilate(precise_mask, kernel, iterations=1)
+
+            # Apply Gaussian blur to the mask for smoother edges (anti-aliasing)
+            precise_mask = cv2.GaussianBlur(precise_mask, (5, 5), 0)
+
+            # Create output with white background
+            transformed_image = np.ones_like(transformed_image) * 255
+
+            # Use the mask as alpha blending weight for smooth edges
+            mask_3channel = cv2.cvtColor(precise_mask, cv2.COLOR_GRAY2BGR) / 255.0
+            transformed_image = (image * mask_3channel + transformed_image * (1 - mask_3channel)).astype(np.uint8)
+
+        return transformed_image
+
+    def _find_largest_contour(self, image):
+        """
+        Find contours in the image and return them along with the leaf mask.
+
+        Args:
+            image (np.ndarray): Input image.
+
+        Returns:
+            tuple: (contours, leaf_mask) where contours is a list of detected contours and leaf_mask is the binary mask of the leaf area.
+
+        Behavior:
+            - Segments the leaf using color thresholds in HSV space.
+            - Creates a binary mask of the leaf area, excluding shadows.
+            - Cleans the mask using morphological operations.
+            - Finds and returns all contours from the cleaned mask.
+        """
         # Apply mask to isolate the leaf - EXCLUDE SHADOWS
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # BROADER color ranges to capture more leaf variations
         # Green: capture light to dark greens, but exclude very dark (shadows)
@@ -265,7 +425,7 @@ class ImgTransformator:
         leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
 
         # ADDITIONAL: Exclude very dark regions (shadows) using Value channel
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Get grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # Get grayscale
         _, bright_mask = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)  # Exclude pixels darker than 50
         leaf_mask = cv2.bitwise_and(leaf_mask, bright_mask)  # Keep only bright regions
 
@@ -319,7 +479,7 @@ def ArgumentParsing():
     parser.add_argument(
         '--transform',
         type=str,
-        choices=['gaussian_blur', 'mask', 'roi_objects', 'analyze_object', 'pseudolandmarks'],
+        choices=['gaussian_blur', 'mask', 'roi_objects', 'pseudolandmarks', 'spots_isolation', 'background_removal'],
         default=None,
         help='Transformation to apply to images (default: None)')
 
@@ -327,6 +487,24 @@ def ArgumentParsing():
 
 
 def range_processing(images, range_nb=None, range_percent=100):
+    """
+    Limit the number of images to process based on specified number and/or percentage.
+
+    Args:
+        images (dict): Dictionary of images categorized by class names.
+        range_nb (int, optional): Maximum number of images to process. If None, no limit is applied.
+        range_percent (int, optional): Percentage of images to process (0-100). Default is 100.
+
+    Returns:
+        dict: Dictionary of images limited to the specified number/percentage.
+
+    Behavior:
+        - Flattens the images dictionary into a list of (category, image_key, image) tuples.
+        - Shuffles the list randomly.
+        - Selects the first 'range_nb' images if specified.
+        - Further limits the selection to 'range_percent' of the total images.
+        - Reconstructs and returns a dictionary of the selected images.
+    """
     all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
     np.random.shuffle(all_images)
     all_images = all_images[:range_nb] if range_nb is not None else all_images

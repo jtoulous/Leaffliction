@@ -9,11 +9,30 @@ from srcs.tools import load_original_images, save_images
 
 class ImgAugmentation:
     def __init__(self, images_structure):
+        """
+        Initialize the ImgAugmentation with a given structure of images.
+
+        Args:
+            images_structure (dict): A dictionary containing images categorized by class names.
+        """
         self.images_structure = images_structure
 
         return
 
     def augment(self, image=None, progress=None, task=None, display=False, augmentation=None):
+        """
+        Apply augmentations to images.
+
+        Args:
+            image (np.ndarray, optional): A single image to augment. If None, augments all images in the structure.
+            progress (Progress, optional): Rich Progress object for tracking progress.
+            task (Task, optional): Rich Task object for updating progress.
+            display (bool, optional): Whether to display images during augmentation.
+            augmentation (str, optional): Specific augmentation to apply. If None, applies all augmentations.
+
+        Returns:
+            dict: A dictionary containing augmented images.
+        """
         function_map = {
             'rotation': self.rotation,
             'blur': self.blur,
@@ -77,6 +96,23 @@ class ImgAugmentation:
         return self.images_structure
 
     def rotation(self, image, angle=np.random.randint(20, 340)):
+        """
+        Apply rotation augmentation to the image.
+
+        Args:
+            image (np.ndarray): The input image to be rotated.
+            angle (float, optional): The rotation angle in degrees. Defaults to a random angle between 20 and 340.
+
+        Returns:
+            np.ndarray: The rotated image.
+
+        Behavior:
+            - Computes new image bounds to ensure the entire rotated image fits.
+            - Creates a rotation matrix centered on the image.
+            - Adjusts translation to center the rotated image.
+            - Applies the rotation using cv2.warpAffine with a white border.
+            - Returns the rotated image.
+        """
         if image is None:
             return []
 
@@ -115,6 +151,21 @@ class ImgAugmentation:
         return rotated_image
 
     def blur(self, image, blur_factor=15):
+        """
+        Apply Gaussian blur augmentation to the image.
+
+        Args:
+            image (np.ndarray): The input image to be blurred.
+            blur_factor (int, optional): The size of the Gaussian kernel. Defaults to 15.
+
+        Returns:
+            np.ndarray: The blurred image.
+
+        Behavior:
+            - Ensures the blur factor is odd (required by GaussianBlur).
+            - Applies Gaussian blur using cv2.GaussianBlur.
+            - Returns the blurred image.
+        """
         if image is None:
             return []
 
@@ -128,6 +179,20 @@ class ImgAugmentation:
         return blurred_image
 
     def contrast(self, image, contrast=1.4):
+        """
+        Apply contrast adjustment to the image.
+
+        Args:
+            image (np.ndarray): The input image to adjust contrast.
+            contrast (float, optional): Contrast factor. Values >1 increase contrast, <1 decrease contrast. Defaults to 1.4.
+
+        Returns:
+            np.ndarray: The contrast-adjusted image.
+
+        Behavior:
+            - Uses cv2.convertScaleAbs to adjust contrast.
+            - Returns the contrast-adjusted image.
+        """
         if image is None:
             return []
 
@@ -135,6 +200,21 @@ class ImgAugmentation:
         return contrasted_image
 
     def scaling(self, image, scale_factor=1.2):
+        """
+        Apply scaling augmentation to the image.
+
+        Args:
+            image (np.ndarray): The input image to be scaled.
+            scale_factor (float, optional): Scaling factor. Values >1 zoom in, <1 zoom out. Defaults to 1.2.
+
+        Returns:
+            np.ndarray: The scaled image.
+
+        Behavior:
+            - Creates a scaling transformation matrix.
+            - Applies the transformation using cv2.warpAffine with a white border.
+            - Returns the scaled image.
+        """
         if image is None:
             return []
 
@@ -167,6 +247,20 @@ class ImgAugmentation:
         return scaled_image
 
     def illumination(self, image, brightness=60):
+        """
+        Apply illumination augmentation to the image.
+
+        Args:
+            image (np.ndarray): The input image to adjust illumination.
+            brightness (int, optional): Brightness offset to add to pixel values. Defaults to 60.
+
+        Returns:
+            np.ndarray: The illumination-adjusted image.
+
+        Behavior:
+            - Uses cv2.convertScaleAbs to adjust brightness.
+            - Returns the illumination-adjusted image.
+        """
         if image is None:
             return []
 
@@ -174,6 +268,23 @@ class ImgAugmentation:
         return illuminated_image
 
     def projective(self, image, intensity=0.2):
+        """
+        Apply projective transformation augmentation to the image.
+
+        Args:
+            image (np.ndarray): The input image to be transformed.
+            intensity (float, optional): Intensity of the perspective distortion (0.0 = none, 0.5 = strong). Defaults to 0.2.
+
+        Returns:
+            np.ndarray: The projectively transformed image.
+
+        Behavior:
+            - Defines source points (corners of the original image).
+            - Applies random perspective distortion to destination points based on intensity.
+            - Computes the perspective transformation matrix.
+            - Applies the perspective transformation using cv2.warpPerspective with a white border.
+            - Returns the projectively transformed image.
+        """
         if image is None:
             return []
 
@@ -268,6 +379,24 @@ def ArgumentParsing():
 
 
 def range_processing(images, range_nb=None, range_percent=100):
+    """
+    Limit the number of images to process based on specified number and/or percentage.
+
+    Args:
+        images (dict): Dictionary of images categorized by class names.
+        range_nb (int, optional): Maximum number of images to process. If None, no limit is applied.
+        range_percent (int, optional): Percentage of images to process (0-100). Default is 100.
+
+    Returns:
+        dict: Dictionary of images limited to the specified number/percentage.
+
+    Behavior:
+        - Flattens the images dictionary into a list of (category, image_key, image) tuples.
+        - Shuffles the list randomly.
+        - Selects the first 'range_nb' images if specified.
+        - Further limits the selection to 'range_percent' of the total images.
+        - Reconstructs and returns a dictionary of the selected images.
+    """
     all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
     np.random.shuffle(all_images)
     all_images = all_images[:range_nb] if range_nb is not None else all_images
