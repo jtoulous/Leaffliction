@@ -155,43 +155,50 @@ class ImgTransformator:
         # Define a region of interest (ROI) to isolate the leaf object
         h, w = img.shape[:2]
 
-        # Create ROI as a rectangle covering the central area of the image
-        roi_result = pcv.roi.rectangle(img=img, x=int(w*0.1), y=int(h*0.1),
-                                       h=int(h*0.8), w=int(w*0.8))
+        # First, apply mask to isolate the leaf
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-        # Handle both single return value and tuple
-        if isinstance(roi_result, tuple):
-            roi_contour, roi_hierarchy = roi_result
-        else:
-            roi_contour = roi_result
-            roi_hierarchy = None
+        # Mask for green and brown (leaf colors)
+        lower_green = np.array([25, 80, 30])
+        upper_green = np.array([85, 255, 100])
+        lower_brown = np.array([0, 20, 10])
+        upper_brown = np.array([30, 255, 200])
 
-        # Convert to grayscale and threshold to find leaf contours
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+        mask_green = cv2.inRange(hsv, lower_green, upper_green)
+        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+        leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
 
-        # Find contours
-        contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # Clean up the mask
+        kernel = np.ones((5, 5), np.uint8)
+        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_CLOSE, kernel)
+        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_OPEN, kernel)
 
-        # Filter objects within ROI
+        # Find contours of the leaf
+        contours, hierarchy = cv2.findContours(leaf_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Filter contours within ROI and by size
         filtered_contours = []
-        for contour in contours:
-            # Check if contour is within ROI bounds
-            M = cv2.moments(contour)
-            if M["m00"] != 0:
-                cx = int(M["m10"] / M["m00"])
-                cy = int(M["m01"] / M["m00"])
-                if (int(w*0.1) <= cx <= int(w*0.9) and
-                    int(h*0.1) <= cy <= int(h*0.9)):
-                    filtered_contours.append(contour)
+        min_area = (h * w) * 0.01  # At least 1% of image area
 
-        # Draw contours on image for visualization
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > min_area:
+                # Check if contour center is within ROI bounds
+                M = cv2.moments(contour)
+                if M["m00"] != 0:
+                    cx = int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                    if (int(w*0.1) <= cx <= int(w*0.9) and
+                        int(h*0.1) <= cy <= int(h*0.9)):
+                        filtered_contours.append(contour)
+
+        # Draw contours and ROI on image for visualization
         result = img.copy()
         if filtered_contours:
-            cv2.drawContours(result, filtered_contours, -1, (0, 255, 0), 2)
-        if roi_contour is not None and isinstance(roi_contour, np.ndarray):
-            cv2.rectangle(result, (int(w*0.1), int(h*0.1)),
-                         (int(w*0.9), int(h*0.9)), (255, 0, 0), 2)
+            cv2.drawContours(result, filtered_contours, -1, (0, 255, 0), 3)
+        # Draw ROI rectangle
+        cv2.rectangle(result, (int(w*0.1), int(h*0.1)),
+                     (int(w*0.9), int(h*0.9)), (255, 0, 0), 2)
 
         return result
 
@@ -257,6 +264,7 @@ def ArgumentParsing():
 
 def range_processing(images, range_nb=None, range_percent=100):
     all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
+    np.random.shuffle(all_images)
     all_images = all_images[:range_nb] if range_nb is not None else all_images
 
     limit = int(len(all_images) * range_percent / 100)
