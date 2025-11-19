@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 import argparse as ap
-import plantcv as pcv
+# import plantcv as pcv
 
+from plantcv import plantcv as pcv
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
 from srcs.tools import load_original_images, save_images
@@ -147,18 +148,47 @@ class ImgTransformator:
 
     def roi_objects(self, img):
         # Define a region of interest (ROI) to isolate the leaf object
-        # Create ROI as a rectangle covering the central area of the image
         h, w = img.shape[:2]
-        roi = pcv.roi.rectangle(img=img, x=int(w*0.1), y=int(h*0.1),
-                                 h=int(h*0.8), w=int(w*0.8))
 
-        # Find objects (contours) within the ROI
-        roi_objects, hierarchy = pcv.roi_objects(img=img, roi_contour=roi[0],
-                                                  roi_hierarchy=roi[1],
-                                                  object_contour='all',
-                                                  obj_hierarchy='all')
+        # Create ROI as a rectangle covering the central area of the image
+        roi_result = pcv.roi.rectangle(img=img, x=int(w*0.1), y=int(h*0.1),
+                                       h=int(h*0.8), w=int(w*0.8))
 
-        return roi_objects
+        # Handle both single return value and tuple
+        if isinstance(roi_result, tuple):
+            roi_contour, roi_hierarchy = roi_result
+        else:
+            roi_contour = roi_result
+            roi_hierarchy = None
+
+        # Convert to grayscale and threshold to find leaf contours
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        _, binary = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+
+        # Find contours
+        contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Filter objects within ROI
+        filtered_contours = []
+        for contour in contours:
+            # Check if contour is within ROI bounds
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                if (int(w*0.1) <= cx <= int(w*0.9) and
+                    int(h*0.1) <= cy <= int(h*0.9)):
+                    filtered_contours.append(contour)
+
+        # Draw contours on image for visualization
+        result = img.copy()
+        if filtered_contours:
+            cv2.drawContours(result, filtered_contours, -1, (0, 255, 0), 2)
+        if roi_contour is not None and isinstance(roi_contour, np.ndarray):
+            cv2.rectangle(result, (int(w*0.1), int(h*0.1)),
+                         (int(w*0.9), int(h*0.9)), (255, 0, 0), 2)
+
+        return result
 
 
     def analyze_object(self, img):
@@ -234,7 +264,7 @@ if __name__ == '__main__':
             # Transform images
             images_transform_task = progress.add_task("↪ Images Transformation", total=0)
             transformator = ImgTransformator(images)
-            transformed_images = transformator.transform(progress=progress, task=global_task, display=args.display)
+            transformed_images = transformator.transform(progress=progress, task=images_transform_task, display=args.display)
             progress.update(global_task, advance=1)
 
             # Save transformed images
