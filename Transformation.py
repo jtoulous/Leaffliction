@@ -152,53 +152,69 @@ class ImgTransformator:
 
 
     def roi_objects(self, img):
-        # Define a region of interest (ROI) to isolate the leaf object
-        h, w = img.shape[:2]
-
-        # First, apply mask to isolate the leaf
+        # Apply mask to isolate the leaf - EXCLUDE SHADOWS
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-        # Mask for green and brown (leaf colors)
-        lower_green = np.array([25, 80, 30])
-        upper_green = np.array([85, 255, 100])
-        lower_brown = np.array([0, 20, 10])
-        upper_brown = np.array([30, 255, 200])
+        # BROADER color ranges to capture more leaf variations
+        # Green: capture light to dark greens, but exclude very dark (shadows)
+        lower_green = np.array([20, 40, 40])  # Increased Value to exclude dark shadows
+        upper_green = np.array([90, 255, 255])
+
+        # Brown/Yellow: capture diseased/autumn leaves, exclude dark shadows
+        lower_brown = np.array([5, 40, 40])  # Increased Saturation and Value
+        upper_brown = np.array([35, 255, 220])
 
         mask_green = cv2.inRange(hsv, lower_green, upper_green)
         mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
         leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
 
-        # Clean up the mask
-        kernel = np.ones((5, 5), np.uint8)
-        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_CLOSE, kernel)
-        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_OPEN, kernel)
+        # ADDITIONAL: Exclude very dark regions (shadows) using Value channel
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Get grayscale
+        _, bright_mask = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)  # Exclude pixels darker than 50
+        leaf_mask = cv2.bitwise_and(leaf_mask, bright_mask)  # Keep only bright regions
 
-        # Find contours of the leaf
-        contours, hierarchy = cv2.findContours(leaf_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Clean up the mask with LARGER kernel for better filling
+        kernel = np.ones((7, 7), np.uint8)
+        # Close gaps first
+        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+        # Fill holes
+        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_DILATE, kernel, iterations=1)
+        # Remove small noise
+        leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_ERODE, kernel, iterations=1)
 
-        # Filter contours within ROI and by size
-        filtered_contours = []
-        min_area = (h * w) * 0.01  # At least 1% of image area
+        # Find ALL contours and select the largest
+        contours, _ = cv2.findContours(leaf_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > min_area:
-                # Check if contour center is within ROI bounds
-                M = cv2.moments(contour)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"])
-                    cy = int(M["m01"] / M["m00"])
-                    if (int(w*0.1) <= cx <= int(w*0.9) and
-                        int(h*0.1) <= cy <= int(h*0.9)):
-                        filtered_contours.append(contour)
-
-        # Draw contours and ROI on image for visualization
         result = img.copy()
-        if filtered_contours:
-            cv2.drawContours(result, filtered_contours, -1, (0, 255, 0), 3)
-        # Draw ROI rectangle
-        cv2.rectangle(result, (int(w*0.1), int(h*0.1)),
-                     (int(w*0.9), int(h*0.9)), (255, 0, 0), 2)
+
+        if contours:
+            # Get the largest contour by area
+            largest_contour = max(contours, key=cv2.contourArea)
+
+            # Optional: smooth the contour using convex hull or approxPolyDP
+            # Uncomment one of these if contour is too jagged:
+            # largest_contour = cv2.convexHull(largest_contour)
+            epsilon = 0.001 * cv2.arcLength(largest_contour, True)
+            largest_contour = cv2.approxPolyDP(largest_contour, epsilon, True)
+
+            # Get bounding rectangle around the leaf
+            x, y, w, h = cv2.boundingRect(largest_contour)
+
+            # Add padding
+            padding = 20
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            w = min(img.shape[1] - x, w + 2*padding)
+            h = min(img.shape[0] - y, h + 2*padding)
+
+            # Use PlantCV's ROI from the bounding box
+            roi = pcv.roi.rectangle(img=result, x=x, y=y, h=h, w=w)
+
+            # Draw the leaf contour in green (THICKER for visibility)
+            cv2.drawContours(result, [largest_contour], -1, (0, 255, 0), 2)
+
+            # Draw the bounding rectangle in blue
+            cv2.rectangle(result, (x, y), (x + w, y + h), (255, 0, 0), 3)
 
         return result
 
