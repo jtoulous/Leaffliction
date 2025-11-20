@@ -16,10 +16,79 @@ class ImgAugmentation:
             images_structure (dict): A dictionary containing images categorized by class names.
         """
         self.images_structure = images_structure
+        self.max_disease_count = max(len(imgs) for imgs in images_structure.values())
 
         return
 
-    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None):
+    def update_image_struct(self, progress=None, task=None):
+        """
+        Update the images structure with oversampling.
+
+        Args:
+            progress (Progress, optional): Rich Progress object for tracking progress.
+            task (Task, optional): Rich Task object for updating progress.
+            display (bool, optional): Whether to display images during augmentation.
+            augmentation (str, optional): Specific augmentation to apply. If None, applies all augmentations.
+
+        Returns:
+            dict: The updated images structure with oversampling.
+        """
+        augmentation_types = ['rotation', 'blur', 'contrast', 'scaling', 'illumination', 'projective']
+
+        if task is not None:
+            total_operations = sum(len(self.images_structure[category]) for category in self.images_structure)
+            progress.update(task, total=total_operations)
+
+        final_struct = {}
+
+        for category in self.images_structure:
+            final_struct[category] = {}
+            current_count = len(self.images_structure[category])
+
+            # Calculate how many transformations needed per image to reach max_disease_count
+            total_needed = self.max_disease_count
+            transformations_per_image = (total_needed // current_count) + 1
+
+            for img_key, img in self.images_structure[category].items():
+                final_struct[category][img_key] = {}
+
+                # Always add original
+                final_struct[category][img_key]['original'] = self.images_structure[category][img_key]
+
+                # Add augmentations randomly until we reach the needed count
+                for i in range(transformations_per_image - 1):  # -1 because we already have 'original'
+                    aug_type = np.random.choice(augmentation_types)
+
+                    # Make unique keys if the same augmentation is used multiple times
+                    aug_key = aug_type
+                    counter = 1
+                    while aug_key in final_struct[category][img_key]:
+                        aug_key = f"{aug_type}_{counter}"
+                        counter += 1
+
+                    final_struct[category][img_key][aug_key] = 'TODO'
+
+                if task is not None:
+                    progress.update(task, advance=1)
+
+            # Trim excess if we overshot the target
+            total_transformations = sum(len(transforms) for transforms in final_struct[category].values())
+            if total_transformations > total_needed:
+                # Remove excess transformations from the last images
+                excess = total_transformations - total_needed
+                for img_key in list(final_struct[category].keys()):
+                    if excess == 0:
+                        break
+                    transforms = list(final_struct[category][img_key].keys())
+                    # Remove non-original transformations
+                    for trans_key in reversed(transforms):
+                        if trans_key != 'original' and excess > 0:
+                            del final_struct[category][img_key][trans_key]
+                            excess -= 1
+
+        return final_struct
+
+    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None, image_struct=None):
         """
         Apply augmentations to images.
 
@@ -42,6 +111,13 @@ class ImgAugmentation:
             'projective': self.projective,
         }
 
+        create_augmentation = False
+
+        if image_struct is None:
+            create_augmentation = True
+            image_struct = self.images_structure
+
+
         if image:
             augmented_images = {}
             augmented_images['original'] = image
@@ -61,39 +137,45 @@ class ImgAugmentation:
         else:
             if task is not None:
                 total = sum(len(imgs) for imgs in
-                            self.images_structure.values())
+                            image_struct.values())
                 progress.update(task, total=total)
 
-            for category in self.images_structure:
+            for category in image_struct:
+                for img_key in image_struct[category]:
+                    if create_augmentation:
+                        image = image_struct[category][img_key]
+                        image_struct[category][img_key] = {
+                            'original': image,
+                            **(
+                                {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
+                                if augmentation is None else
+                                {augmentation: function_map[augmentation](image)}
+                            )
+                        }
 
-                if task is not None:
-                    progress.update(task, description=f"Images augmentation: {category}")
-
-                for img_key in self.images_structure[category]:
-                    image = self.images_structure[category][img_key]
-                    self.images_structure[category][img_key] = {
-                        'original': image,
-                        **(
-                            {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
-                            if augmentation is None else
-                            {augmentation: function_map[augmentation](image)}
-                        )
-                    }
+                    else:
+                        augmented_images = {}
+                        for aug_type in image_struct[category][img_key]:
+                            if aug_type == 'original':
+                                augmented_images['original'] = image_struct[category][img_key]['original']
+                            else:
+                                if augmentation is None or aug_type.startswith(augmentation):
+                                    aug_function = function_map.get(aug_type.split('_')[0], None)
+                                    if aug_function:
+                                        augmented_images[aug_type] = aug_function(image_struct[category][img_key]['original'])
+                        image_struct[category][img_key] = augmented_images
 
                     if task is not None:
                         progress.update(task, advance=1)
 
                     if display:
-                        augmented_images = self.images_structure[category][img_key]
+                        augmented_images = image_struct[category][img_key]
                         for aug_type, aug_image in augmented_images.items():
                             cv2.imshow(f"{category} - {img_key} - {aug_type}", aug_image)
                         cv2.waitKey(0)
                         cv2.destroyAllWindows()
 
-                if task is not None:
-                    progress.update(task, description="↪ Images augmentation")
-
-        return self.images_structure
+        return image_struct
 
     def rotation(self, image, angle=np.random.randint(20, 340)):
         """
@@ -346,9 +428,8 @@ def ArgumentParsing():
     parser.add_argument(
         '--save-folder',
         type=str,
-        default='data/leaves_preprocessed',
-        help='Folder to save augmented images \
-              (default: data/leaves_preprocessed)')
+        default='data/leaves',
+        help='Folder to save augmented images (default: data/leaves)')
     parser.add_argument(
         '--display',
         action='store_true',
@@ -436,9 +517,17 @@ if __name__ == '__main__':
             np.random.seed(args.seed)
 
             # Augment images
-            images_augment_task = progress.add_task("↪ Images augmentation", total=0)
+            images_augment_task = progress.add_task("↪ Images augmentation", total=2)
             augmentator = ImgAugmentation(images)
-            augmented_images = augmentator.augment(progress=progress, task=images_augment_task, display=args.display, augmentation=args.augmentation)
+
+            oversample_struct_task = progress.add_task("  ↪ Oversampling struct", total=0)
+            oversampled_struct = augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
+            progress.update(images_augment_task, advance=1)
+            progress.update(global_task, advance=1)
+
+            augmenting_images_task = progress.add_task("  ↪ Augmenting images", total=0)
+            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation, image_struct=oversampled_struct)
+            progress.update(images_augment_task, advance=1)
             progress.update(global_task, advance=1)
 
             # Save augmented images
