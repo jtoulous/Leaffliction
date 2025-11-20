@@ -196,7 +196,7 @@ class ImgTransformator:
 
         return transformed_image
 
-    def mask(self, image):  # TODO: fine tune this one
+    def mask(self, image):
         """
         Apply a mask to isolate leaf areas in the image.
 
@@ -207,33 +207,45 @@ class ImgTransformator:
             np.ndarray: Image with non-leaf areas masked out.
 
         Behavior:
-            - Segments the leaf using strict color thresholds in HSV space.
-            - Creates a mask that includes only the leaf areas.
+            - Finds the largest contour (leaf boundary) to remove background
+            - Applies color-based mask within the leaf contour area
             - Returns the masked image with non-leaf areas set to white.
         """
         transformed_image = image.copy()
-        # Convertir en HSV pour mieux segmenter
-        hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
+        contours, _ = self._find_largest_contour(transformed_image)
 
-        # VERT TRES RESTRICTIF (seulement vert foncé)
-        lower_green = np.array([25, 80, 30])    # saturation haute, value basse
-        upper_green = np.array([85, 255, 100])  # value max basse
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
 
-        # MARRON TRES SOUPLE
-        lower_brown = np.array([0, 20, 10])     # hue très large
-        upper_brown = np.array([30, 255, 200])  # saturation/value larges
+            # Create contour mask (removes background)
+            contour_mask = np.zeros(transformed_image.shape[:2], dtype=np.uint8)
+            cv2.drawContours(contour_mask, [largest_contour], -1, 255, thickness=cv2.FILLED)
 
-        mask_green = cv2.inRange(hsv, lower_green, upper_green)
-        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+            # Convert to HSV for color-based segmentation
+            hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
 
-        # COMBINER
-        leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
+            # VERT TRES RESTRICTIF (seulement vert foncé)
+            lower_green = np.array([25, 80, 30])    # saturation haute, value basse
+            upper_green = np.array([85, 255, 100])  # value max basse
 
-        # RESULTAT
-        tmp = np.ones_like(transformed_image) * 255
-        tmp[leaf_mask > 0] = transformed_image[leaf_mask > 0]
+            # MARRON TRES SOUPLE
+            lower_brown = np.array([0, 20, 10])     # hue très large
+            upper_brown = np.array([30, 255, 200])  # saturation/value larges
 
-        transformed_image = tmp
+            mask_green = cv2.inRange(hsv, lower_green, upper_green)
+            mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+
+            # COMBINER
+            leaf_mask = cv2.bitwise_or(mask_green, mask_brown)
+
+            # Apply contour mask to restrict color mask to leaf area only
+            leaf_mask = cv2.bitwise_and(leaf_mask, contour_mask)
+
+            # RESULTAT
+            tmp = np.ones_like(transformed_image) * 255
+            tmp[leaf_mask > 0] = transformed_image[leaf_mask > 0]
+
+            transformed_image = tmp
 
         return transformed_image
 
@@ -344,41 +356,57 @@ class ImgTransformator:
             np.ndarray: Image with isolated spots.
 
         Behavior:
+            - Finds the largest contour (leaf boundary) to remove background
             - Converts the image to HSV color space.
             - Dynamically determines brown color thresholds based on the image.
             - Creates a mask for brown areas and applies morphological operations to enhance it.
-            - Returns the image with only the brown areas visible, non-brown areas set to white
+            - Returns the image with only the brown areas visible within the leaf, non-brown areas set to white
         """
         transformed_image = image.copy()
-        hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
+        contours, _ = self._find_largest_contour(transformed_image)
 
-        # Mask large pour trouver TOUS les marrons possibles
-        mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30], dtype=np.uint8), np.array([40, 255, 220], dtype=np.uint8))
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
 
-        # Calculer l'histogramme des valeurs (V) des pixels marrons
-        brown_pixels_v = hsv[:, :, 2][mask_all_brown > 0]
+            # Create contour mask (removes background)
+            contour_mask = np.zeros(transformed_image.shape[:2], dtype=np.uint8)
+            cv2.drawContours(contour_mask, [largest_contour], -1, 255, thickness=cv2.FILLED)
 
-        if len(brown_pixels_v) > 0:
-            median_v = np.median(brown_pixels_v)
-            v_range = 40
-            lower_v = int(max(30, median_v - v_range))
-            upper_v = int(min(200, median_v + v_range))
-        else:
-            lower_v, upper_v = 50, 150
+            hsv = cv2.cvtColor(transformed_image, cv2.COLOR_BGR2HSV)
 
-        lower_brown = np.array([0, 30, lower_v], dtype=np.uint8)
-        upper_brown = np.array([30, 220, upper_v], dtype=np.uint8)
-        mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+            # Mask large pour trouver TOUS les marrons possibles
+            mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30], dtype=np.uint8), np.array([40, 255, 220], dtype=np.uint8))
 
-        # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
-        kernel = np.ones((5, 5), np.uint8)
-        mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
-        mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
+            # Apply contour mask to restrict brown detection to leaf area only
+            mask_all_brown = cv2.bitwise_and(mask_all_brown, contour_mask)
 
-        tmp = np.ones_like(transformed_image) * 255
-        tmp[mask_brown > 0] = transformed_image[mask_brown > 0]
+            # Calculer l'histogramme des valeurs (V) des pixels marrons
+            brown_pixels_v = hsv[:, :, 2][mask_all_brown > 0]
 
-        transformed_image = tmp
+            if len(brown_pixels_v) > 0:
+                median_v = np.median(brown_pixels_v)
+                v_range = 40
+                lower_v = int(max(30, median_v - v_range))
+                upper_v = int(min(200, median_v + v_range))
+            else:
+                lower_v, upper_v = 50, 150
+
+            lower_brown = np.array([0, 30, lower_v], dtype=np.uint8)
+            upper_brown = np.array([30, 220, upper_v], dtype=np.uint8)
+            mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
+
+            # Apply contour mask to restrict brown spots to leaf area only
+            mask_brown = cv2.bitwise_and(mask_brown, contour_mask)
+
+            # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
+            kernel = np.ones((5, 5), np.uint8)
+            mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
+            mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
+
+            tmp = np.ones_like(transformed_image) * 255
+            tmp[mask_brown > 0] = transformed_image[mask_brown > 0]
+
+            transformed_image = tmp
 
         return transformed_image
 
