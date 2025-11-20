@@ -6,7 +6,7 @@ from plantcv import plantcv as pcv
 from plantcv.plantcv.homology.x_axis_pseudolandmark import x_axis_pseudolandmarks
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
-from srcs.tools import load_original_images, save_images
+from srcs.tools import save_images, load_images
 
 
 class ImgTransformator:
@@ -21,7 +21,7 @@ class ImgTransformator:
 
         return
 
-    def transform(self, image=None, progress=None, task=None, display=False, transform=None):
+    def transform(self, image=None, progress=None, task=None, display=False, transform=None, transform_list=None):
         """
         Apply transformations to images.
 
@@ -61,31 +61,52 @@ class ImgTransformator:
 
             return transformed_images
         else:
+            if transform_list is not None:
+                num_transformations = len(transform_list)
+            elif transform is not None:
+                num_transformations = 1
+            else:
+                num_transformations = len(function_map)
+
+            total_operations = sum(len(imgs) for imgs in self.images_structure.values()) * (num_transformations + 1)
+
             if task is not None:
-                progress.update(task, total=sum(len(imgs) for imgs in self.images_structure.values()))
+                progress.update(task, total=total_operations)
 
             for category in self.images_structure:
 
                 if task is not None:
-                    progress.update(task, description=f"Images transformation: {category}")
+                    progress.update(task, description=f"↪ Images transformation: {category}")
 
                 for img_key in self.images_structure[category]:
-                    image = self.images_structure[category][img_key]
-                    self.images_structure[category][img_key] = {
-                        'original': image,
-                        **(
-                            {trans_name: trans_function(image) for trans_name, trans_function in function_map.items()}
-                            if transform is None else
-                            {transform: function_map[transform](image)}
-                        )
-                    }
+                    image = self.images_structure[category][img_key]['original']
 
+                    self.images_structure[category][img_key] = {'original': image}
                     if task is not None:
                         progress.update(task, advance=1)
 
+                    if transform is None and transform_list is None:
+                        for trans_name, trans_function in function_map.items():
+                            self.images_structure[category][img_key][trans_name] = trans_function(image)
+                            if task is not None:
+                                progress.update(task, advance=1)
+
+                    elif transform_list is not None:
+                        for transform in transform_list:
+                            if transform in function_map:
+                                self.images_structure[category][img_key][transform] = function_map[transform](image)
+                                if task is not None:
+                                    progress.update(task, advance=1)
+
+                    else:
+                        self.images_structure[category][img_key][transform] = function_map[transform](image)
+                        if task is not None:
+                            progress.update(task, advance=1)
+
                     if display:
-                        for idx, img in enumerate(self.images_structure[category][img_key].values()):
-                            cv2.imshow(f"Transformed Image {idx+1}", img)
+                        transformed_images = self.images_structure[category][img_key]
+                        for trans_type, trans_img in transformed_images.items():
+                            cv2.imshow(f"{category} - {img_key} - {trans_type}", trans_img)
                         cv2.waitKey(0)
                         cv2.destroyAllWindows()
 
@@ -537,11 +558,13 @@ if __name__ == '__main__':
 
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
-            images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+            images, type_of_load = load_images(args.load_folder, progress=progress, task=images_load_task)
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
             np.random.seed(args.seed)
+            if type_of_load == 'File':
+                args.display = True
 
             # Transform images
             images_transform_task = progress.add_task("↪ Images Transformation", total=0)
@@ -554,7 +577,6 @@ if __name__ == '__main__':
                 images_save_task = progress.add_task("↪ Save transformed images", total=0)
                 save_images(transformed_images, args.save_folder, progress=progress, task=images_save_task)
             progress.update(global_task, advance=1)
-
 
     except Exception as error:
         print(f'Error: {error}')
