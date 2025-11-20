@@ -232,7 +232,7 @@ class ImgAugmentation:
 
         return rotated_image
 
-    def blur(self, image, blur_factor=15):
+    def blur(self, image, blur_factor=5):
         """
         Apply Gaussian blur augmentation to the image.
 
@@ -510,7 +510,7 @@ if __name__ == '__main__':
 
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
-            images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+            images, type_of_load = load_original_images(args.load_folder, progress=progress, task=images_load_task)
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
@@ -520,14 +520,17 @@ if __name__ == '__main__':
             images_augment_task = progress.add_task("↪ Images augmentation", total=2)
             augmentator = ImgAugmentation(images)
 
-            oversample_struct_task = progress.add_task("  ↪ Oversampling struct", total=0)
-            oversampled_struct = augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
-            progress.update(images_augment_task, advance=1)
-            progress.update(global_task, advance=1)
+            if type_of_load == "File":
+                progress.update(images_augment_task, total=1)
+            else:
+                oversample_struct_task = progress.add_task("  ↪ Oversampling struct", total=0)
+                oversampled_struct = augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
+                progress.update(images_augment_task, advance=1)
 
             augmenting_images_task = progress.add_task("  ↪ Augmenting images", total=0)
-            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation, image_struct=oversampled_struct)
+            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation, image_struct=oversampled_struct if type_of_load != "File" else None)
             progress.update(images_augment_task, advance=1)
+
             progress.update(global_task, advance=1)
 
             # Save augmented images
