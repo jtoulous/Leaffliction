@@ -31,7 +31,7 @@ def load_original_images(load_folder, progress=None, task=None):
         if task is not None:
             progress.update(task, advance=1)
 
-        return images_dict
+        return images_dict, "File"
 
     # Case 2: Category folder path (leaves/category)
     if os.path.isdir(load_folder):
@@ -52,7 +52,7 @@ def load_original_images(load_folder, progress=None, task=None):
                     if task is not None:
                         progress.update(task, advance=1)
 
-            return images_dict
+            return images_dict, "Category"
 
     # Case 3: Root folder path (leaves/)
     if task is not None:
@@ -76,7 +76,7 @@ def load_original_images(load_folder, progress=None, task=None):
                 if task is not None:
                     progress.update(task, advance=1)
 
-    return images_dict
+    return images_dict, "Root"
 
 
 def load_images(load_folder, progress=None, task=None):
@@ -117,7 +117,7 @@ def load_images(load_folder, progress=None, task=None):
         if task is not None:
             progress.update(task, advance=1)
 
-        return images_dict
+        return images_dict, "File"
 
     # Case 2: Category folder path (leaves/category)
     if os.path.isdir(load_folder):
@@ -147,7 +147,7 @@ def load_images(load_folder, progress=None, task=None):
                 if task is not None:
                     progress.update(task, advance=1)
 
-            return images_dict
+            return images_dict, "Category"
 
     # Case 3: Root folder path (leaves/)
     if task is not None:
@@ -183,7 +183,7 @@ def load_images(load_folder, progress=None, task=None):
             if task is not None:
                 progress.update(task, advance=1)
 
-    return images_dict
+    return images_dict, "Root"
 
 
 def save_images(images, save_folder, progress=None, task=None):
@@ -208,7 +208,7 @@ def save_images(images, save_folder, progress=None, task=None):
         for image_name, images_variations in class_images.items():
             for variation, img in images_variations.items():
                 if variation == 'original':
-                    filename = f'{image_name}'
+                    filename = f'{image_name.rstrip(".JPG")}.JPG'
                 else:
                     filename = f'{image_name.rstrip(".JPG")}_{variation}.JPG'
                 filepath = os.path.join(class_folder, filename)
