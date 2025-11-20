@@ -1,6 +1,6 @@
 import os
 import cv2
-
+import numpy as np
 
 def load_original_images(load_folder, progress=None, task=None):
     """
@@ -12,7 +12,7 @@ def load_original_images(load_folder, progress=None, task=None):
         task (Task, optional): Task identifier for progress tracking.
 
     Returns:
-        dict: A nested dictionary with structure {class_name: {image_file: image_data}}
+        dict: A nested dictionary with structure {class_name: {image_file: {enhancement_type: image_data}}}
     """
     images_dict = {}
 
@@ -26,7 +26,8 @@ def load_original_images(load_folder, progress=None, task=None):
             progress.update(task, total=1)
 
         images_dict[class_name] = {}
-        images_dict[class_name][image_file] = cv2.imread(load_folder)
+        images_dict[class_name][image_file] = {}
+        images_dict[class_name][image_file]['original'] = cv2.imread(load_folder)
 
         if task is not None:
             progress.update(task, advance=1)
@@ -47,7 +48,8 @@ def load_original_images(load_folder, progress=None, task=None):
             for image_file in contents:
                 if len(image_file.split('_')) == 1:
                     img_path = os.path.join(load_folder, image_file)
-                    images_dict[class_name][image_file] = cv2.imread(img_path)
+                    images_dict[class_name][image_file] = {}
+                    images_dict[class_name][image_file]['original'] = cv2.imread(img_path)
 
                     if task is not None:
                         progress.update(task, advance=1)
@@ -71,7 +73,8 @@ def load_original_images(load_folder, progress=None, task=None):
         for image_file in os.listdir(class_folder):
             if len(image_file.split('_')) == 1:
                 img_path = os.path.join(class_folder, image_file)
-                images_dict[leaf_class][image_file] = cv2.imread(img_path)
+                images_dict[leaf_class][image_file] = {}
+                images_dict[leaf_class][image_file]['original'] = cv2.imread(img_path)
 
                 if task is not None:
                     progress.update(task, advance=1)
@@ -219,122 +222,36 @@ def save_images(images, save_folder, progress=None, task=None):
                     progress.update(task, advance=1)
 
 
-# loaded original imgs
-#{
-#    'Apple_Black_rot': {
-#        'image (1)': img_1,
-#        'image (2)': img_2,
-#        'image (3)': img_3,
-#    }
-#
-#    'Apple_healthy': {
-#        'image (1)': img_1,
-#        'image (2)': img_2,
-#        'image (3)': img_3,
-#    }
-#
-#    'etc...': {
-#        '...': ...
-#    }
-#
-#}
-#
-#
-#
-## loaded imgs
-#{
-#    'Apple_Black_rot': {
-#        'image (1)': {
-#            'original': img_1_original,
-#            'rotation': img_1_rotation,
-#            'blur': img_1_blur,
-#            'etc...': ...
-#        },
-#
-#        'image (2)': {
-#            'original': img_2_original,
-#            'rotation': img_2_rotation,
-#            'blur': img_2_blur,
-#            'etc...': ...
-#        },
-#
-#        'etc...':{
-#            'etc...': ...
-#        }
-#    }
-#
-#    'Apple_healthy': {
-#        'image (1)': {
-#            'original': img_1_original,
-#            'rotation': img_1_rotation,
-#            'blur': img_1_blur,
-#            'etc...': ...
-#        },
-#
-#        'image (2)': {
-#            'original': img_2_original,
-#            'rotation': img_2_rotation,
-#            'blur': img_2_blur,
-#            'etc...': ...
-#        },
-#
-#        'etc...':{
-#            'etc...': ...
-#        }
-#    }
-#
-#
-#    'etc...': {
-#        '...': ...
-#    }
-#
-#}
-#
-#
-## saved images
-#{
-#    'Apple_Black_rot': {
-#        'image (1)': {
-#            'original': img_1_original,
-#            'rotation': img_1_rotation,
-#            'blur': img_1_blur,
-#            'etc...': ...
-#        },
-#
-#        'image (2)': {
-#            'original': img_2_original,
-#            'rotation': img_2_rotation,
-#            'blur': img_2_blur,
-#            'etc...': ...
-#        },
-#
-#        'etc...':{
-#            'etc...': ...
-#        }
-#    }
-#
-#    'Apple_healthy': {
-#        'image (1)': {
-#            'original': img_1_original,
-#            'rotation': img_1_rotation,
-#            'blur': img_1_blur,
-#            'etc...': ...
-#        },
-#
-#        'image (2)': {
-#            'original': img_2_original,
-#            'rotation': img_2_rotation,
-#            'blur': img_2_blur,
-#            'etc...': ...
-#        },
-#
-#        'etc...':{
-#            'etc...': ...
-#        }
-#    }
-#
-#
-#    'etc...': {
-#        '...': ...
-#    }
-#}
+def range_processing(images, range_nb=None, range_percent=100):
+    """
+    Limit the number of images to process based on specified number and/or percentage.
+
+    Args:
+        images (dict): Dictionary of images categorized by class names.
+        range_nb (int, optional): Maximum number of images to process. If None, no limit is applied.
+        range_percent (int, optional): Percentage of images to process (0-100). Default is 100.
+
+    Returns:
+        dict: Dictionary of images limited to the specified number/percentage.
+
+    Behavior:
+        - Flattens the images dictionary into a list of (category, image_key, image) tuples.
+        - Shuffles the list randomly.
+        - Selects the first 'range_nb' images if specified.
+        - Further limits the selection to 'range_percent' of the total images.
+        - Reconstructs and returns a dictionary of the selected images.
+    """
+    all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
+    np.random.shuffle(all_images)
+    all_images = all_images[:range_nb] if range_nb is not None else all_images
+
+    limit = int(len(all_images) * range_percent / 100)
+    all_images = all_images[:limit]
+
+    images = {}
+    for cat, img_key, img in all_images:
+        if cat not in images:
+            images[cat] = {}
+        images[cat][img_key] = img
+
+    return images
