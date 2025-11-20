@@ -40,7 +40,7 @@ def load_original_images(load_folder, progress=None, task=None):
             class_name = os.path.basename(load_folder.rstrip('/\\'))
 
             if task is not None:
-                progress.update(task, total=len(contents))
+                progress.update(task, total=len([f for f in contents if len(f.split('_')) == 1]))
 
             images_dict[class_name] = {}
 
@@ -56,7 +56,7 @@ def load_original_images(load_folder, progress=None, task=None):
 
     # Case 3: Root folder path (leaves/)
     if task is not None:
-        progress.update(task, total=sum(len(os.listdir(os.path.join(load_folder, leaf_class))) for leaf_class in os.listdir(load_folder) if os.path.isdir(os.path.join(load_folder, leaf_class))))
+        progress.update(task, total=sum(len([f for f in os.listdir(os.path.join(load_folder, leaf_class)) if len(f.split('_')) == 1]) for leaf_class in os.listdir(load_folder) if os.path.isdir(os.path.join(load_folder, leaf_class))))
 
     for leaf_class in os.listdir(load_folder):
         class_folder = os.path.join(load_folder, leaf_class)
@@ -206,12 +206,12 @@ def save_images(images, save_folder, progress=None, task=None):
         os.makedirs(class_folder, exist_ok=True)
 
         for image_name, images_variations in class_images.items():
-            image_folder = os.path.join(class_folder, image_name)
-            os.makedirs(image_folder, exist_ok=True)
-
             for variation, img in images_variations.items():
-                filename = f'{image_name}_{variation}.JPG'
-                filepath = os.path.join(image_folder, filename)
+                if variation == 'original':
+                    filename = f'{image_name}'
+                else:
+                    filename = f'{image_name.rstrip(".JPG")}_{variation}.JPG'
+                filepath = os.path.join(class_folder, filename)
 
                 cv2.imwrite(filepath, img)
 
