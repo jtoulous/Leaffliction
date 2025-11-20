@@ -59,8 +59,8 @@ class Distribution:
         wedges, texts, autotexts = ax.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
 
         annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                           bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                           arrowprops=dict(arrowstyle="->"))
+                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
 
         def on_hover(event):
@@ -109,8 +109,8 @@ class Distribution:
         plt.xticks(rotation=45)
 
         annot = ax.annotate("", xy=(0, 0), xytext=(-30, -40), textcoords="offset points",
-                           bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                           arrowprops=dict(arrowstyle="->"))
+                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
 
         def on_hover(event):

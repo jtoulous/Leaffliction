@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import argparse as ap
 
-from plantcv import plantcv as pcv
 from plantcv.plantcv.homology.x_axis_pseudolandmark import x_axis_pseudolandmarks
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
@@ -179,7 +178,7 @@ class ImgTransformator:
 
         return transformed_image
 
-    def mask(self, image): # TODO: fine tune this one
+    def mask(self, image):  # TODO: fine tune this one
         """
         Apply a mask to isolate leaf areas in the image.
 
@@ -339,7 +338,7 @@ class ImgTransformator:
         mask_all_brown = cv2.inRange(hsv, np.array([0, 20, 30], dtype=np.uint8), np.array([40, 255, 220], dtype=np.uint8))
 
         # Calculer l'histogramme des valeurs (V) des pixels marrons
-        brown_pixels_v = hsv[:,:,2][mask_all_brown > 0]
+        brown_pixels_v = hsv[:, :, 2][mask_all_brown > 0]
 
         if len(brown_pixels_v) > 0:
             median_v = np.median(brown_pixels_v)
@@ -354,7 +353,7 @@ class ImgTransformator:
         mask_brown = cv2.inRange(hsv, lower_brown, upper_brown)
 
         # DILATATION POUR COMBLER LES TROUS ET ÉTENDRE LES ZONES
-        kernel = np.ones((5,5), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
         mask_brown = cv2.morphologyEx(mask_brown, cv2.MORPH_CLOSE, kernel)  # Combine d'abord les zones proches
         mask_brown = cv2.dilate(mask_brown, kernel, iterations=1)  # Étend les bords
 
