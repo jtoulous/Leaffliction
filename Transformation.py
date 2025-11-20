@@ -466,14 +466,20 @@ class ImgTransformator:
 
 
 def ArgumentParsing():
+    """
+    Parse command-line arguments for image augmentation.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = ap.ArgumentParser()
     parser.add_argument(
-        '--load-folder',
+        '--source',
         type=str,
         default='data/leaves',
         help='Folder with original images (default: data/leaves)')
     parser.add_argument(
-        '--save-folder',
+        '--destination',
         type=str,
         default='data/leaves_preprocessed',
         help='Folder to save augmented images \
@@ -558,7 +564,7 @@ if __name__ == '__main__':
 
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
-            images, type_of_load = load_images(args.load_folder, progress=progress, task=images_load_task)
+            images, type_of_load = load_images(args.source, progress=progress, task=images_load_task)
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
@@ -573,9 +579,9 @@ if __name__ == '__main__':
             progress.update(global_task, advance=1)
 
             # Save transformed images
-            if args.save_folder not in [None, '', 'None']:
+            if args.destination not in [None, '', 'None']:
                 images_save_task = progress.add_task("↪ Save transformed images", total=0)
-                save_images(transformed_images, args.save_folder, progress=progress, task=images_save_task)
+                save_images(transformed_images, args.destination, progress=progress, task=images_save_task)
             progress.update(global_task, advance=1)
 
     except Exception as error:
