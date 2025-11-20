@@ -4,7 +4,7 @@ import argparse as ap
 
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
-from srcs.tools import load_original_images, save_images
+from srcs.tools import load_original_images, save_images, range_processing
 
 
 class ImgAugmentation:
@@ -53,7 +53,7 @@ class ImgAugmentation:
                 final_struct[category][img_key] = {}
 
                 # Always add original
-                final_struct[category][img_key]['original'] = self.images_structure[category][img_key]
+                final_struct[category][img_key]['original'] = self.images_structure[category][img_key]['original']
 
                 # Add augmentations randomly until we reach the needed count
                 for i in range(transformations_per_image - 1):  # -1 because we already have 'original'
@@ -86,9 +86,11 @@ class ImgAugmentation:
                             del final_struct[category][img_key][trans_key]
                             excess -= 1
 
-        return final_struct
+        self.images_structure = final_struct
 
-    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None, image_struct=None):
+        return self.images_structure
+
+    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None):
         """
         Apply augmentations to images.
 
@@ -111,13 +113,6 @@ class ImgAugmentation:
             'projective': self.projective,
         }
 
-        create_augmentation = False
-
-        if image_struct is None:
-            create_augmentation = True
-            image_struct = self.images_structure
-
-
         if image:
             augmented_images = {}
             augmented_images['original'] = image
@@ -136,46 +131,32 @@ class ImgAugmentation:
             return augmented_images
         else:
             if task is not None:
-                total = sum(len(imgs) for imgs in
-                            image_struct.values())
+                total = sum(len(imgs) for imgs in self.images_structure.values() for imgs in imgs.values())
                 progress.update(task, total=total)
 
-            for category in image_struct:
-                for img_key in image_struct[category]:
-                    if create_augmentation:
-                        image = image_struct[category][img_key]
-                        image_struct[category][img_key] = {
-                            'original': image,
-                            **(
-                                {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
-                                if augmentation is None else
-                                {augmentation: function_map[augmentation](image)}
-                            )
-                        }
-
-                    else:
-                        augmented_images = {}
-                        for aug_type in image_struct[category][img_key]:
-                            if aug_type == 'original':
-                                augmented_images['original'] = image_struct[category][img_key]['original']
-                            else:
-                                if augmentation is None or aug_type.startswith(augmentation):
-                                    aug_function = function_map.get(aug_type.split('_')[0], None)
-                                    if aug_function:
-                                        augmented_images[aug_type] = aug_function(image_struct[category][img_key]['original'])
-                        image_struct[category][img_key] = augmented_images
-
-                    if task is not None:
-                        progress.update(task, advance=1)
+            for category in self.images_structure:
+                for img_key in self.images_structure[category]:
+                    augmented_images = {}
+                    for aug_type in self.images_structure[category][img_key]:
+                        if aug_type == 'original':
+                            augmented_images['original'] = self.images_structure[category][img_key]['original']
+                        else:
+                            if augmentation is None or aug_type == augmentation:
+                                aug_function = function_map.get(aug_type.split('_')[0], None)
+                                if aug_function:
+                                    augmented_images[aug_type] = aug_function(self.images_structure[category][img_key]['original'])
+                        if task is not None:
+                            progress.update(task, advance=1)
+                    self.images_structure[category][img_key] = augmented_images
 
                     if display:
-                        augmented_images = image_struct[category][img_key]
+                        augmented_images = self.images_structure[category][img_key]
                         for aug_type, aug_image in augmented_images.items():
                             cv2.imshow(f"{category} - {img_key} - {aug_type}", aug_image)
                         cv2.waitKey(0)
                         cv2.destroyAllWindows()
 
-        return image_struct
+        return self.images_structure
 
     def rotation(self, image, angle=np.random.randint(20, 340)):
         """
@@ -419,14 +400,20 @@ class ImgAugmentation:
 
 
 def ArgumentParsing():
+    """
+    Parse command-line arguments for image augmentation.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = ap.ArgumentParser()
     parser.add_argument(
-        '--load-folder',
+        '--source',
         type=str,
         default='data/leaves',
         help='Folder with original images (default: data/leaves)')
     parser.add_argument(
-        '--save-folder',
+        '--destination',
         type=str,
         default='data/leaves',
         help='Folder to save augmented images (default: data/leaves)')
@@ -459,41 +446,6 @@ def ArgumentParsing():
     return parser.parse_args()
 
 
-def range_processing(images, range_nb=None, range_percent=100):
-    """
-    Limit the number of images to process based on specified number and/or percentage.
-
-    Args:
-        images (dict): Dictionary of images categorized by class names.
-        range_nb (int, optional): Maximum number of images to process. If None, no limit is applied.
-        range_percent (int, optional): Percentage of images to process (0-100). Default is 100.
-
-    Returns:
-        dict: Dictionary of images limited to the specified number/percentage.
-
-    Behavior:
-        - Flattens the images dictionary into a list of (category, image_key, image) tuples.
-        - Shuffles the list randomly.
-        - Selects the first 'range_nb' images if specified.
-        - Further limits the selection to 'range_percent' of the total images.
-        - Reconstructs and returns a dictionary of the selected images.
-    """
-    all_images = [(cat, img_key, img) for cat, imgs in images.items() for img_key, img in imgs.items()]
-    np.random.shuffle(all_images)
-    all_images = all_images[:range_nb] if range_nb is not None else all_images
-
-    limit = int(len(all_images) * range_percent / 100)
-    all_images = all_images[:limit]
-
-    images = {}
-    for cat, img_key, img in all_images:
-        if cat not in images:
-            images[cat] = {}
-        images[cat][img_key] = img
-
-    return images
-
-
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
@@ -510,7 +462,7 @@ if __name__ == '__main__':
 
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
-            images, type_of_load = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+            images, type_of_load = load_original_images(args.source, progress=progress, task=images_load_task)
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
@@ -524,19 +476,18 @@ if __name__ == '__main__':
                 progress.update(images_augment_task, total=1)
             else:
                 oversample_struct_task = progress.add_task("  ↪ Oversampling struct", total=0)
-                oversampled_struct = augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
+                augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
                 progress.update(images_augment_task, advance=1)
 
             augmenting_images_task = progress.add_task("  ↪ Augmenting images", total=0)
-            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation, image_struct=oversampled_struct if type_of_load != "File" else None)
+            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation)
             progress.update(images_augment_task, advance=1)
-
             progress.update(global_task, advance=1)
 
             # Save augmented images
-            if args.save_folder not in [None, '', 'None']:
+            if args.destination not in [None, '', 'None']:
                 images_save_task = progress.add_task("↪ Save augmented images", total=0)
-                save_images(augmented_images, args.save_folder, progress=progress, task=images_save_task)
+                save_images(augmented_images, args.destination, progress=progress, task=images_save_task)
             progress.update(global_task, advance=1)
 
     except Exception as error:
