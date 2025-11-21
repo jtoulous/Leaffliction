@@ -34,11 +34,24 @@ if __name__ == '__main__':
         X = []
         y = []
 
-        original_images = load_original_images(args.imgs_folder)
+        total = 0
+
+        original_images, type_of_load = load_original_images(args.imgs_folder)
         for img_class, imgs_list in original_images.items():
-            for img_name, img in imgs_list.items():
-                X.append(img)
-                y.append(img_class)
+            for img_name, img_types in imgs_list.items():
+                for img_type, img in img_types.items():
+
+                    if not isinstance(img, np.ndarray):
+                        print(f"ERREUR: {img_class}/{img_name} n'est pas un numpy array, type: {type(img)}")
+                        continue
+
+                    # Vérifiez les dimensions
+                    if len(img.shape) != 3 or img.shape[2] != 3:
+                        print(f"ATTENTION: {img_class}/{img_name} a des dimensions invalides: {img.shape}")
+                        continue
+
+                    X.append(img)
+                    y.append(img_class)
 
         X = np.array(X)
         y = np.array(y)
