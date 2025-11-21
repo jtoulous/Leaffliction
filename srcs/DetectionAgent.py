@@ -49,7 +49,7 @@ class DetectionAgent:
 
 
 
-    def train(self, X, y, transfo=['gaussian_blur']):
+    def train(self, X, y):
         X, y = self.preprocessing(X, y=y)
         train_idxs, test_idxs = self.split_indices(len(X))
 
@@ -58,7 +58,7 @@ class DetectionAgent:
             y=y[train_idxs],
             img_size=self.img_size,
             batch_size=self.batch_size,
-            transformations=transfo, 
+            transformations=self.transformations, 
             shuffle=True
         )
         test_data_manager = DataManager(
@@ -124,13 +124,22 @@ class DetectionAgent:
             shutil.rmtree(save_folder)
         os.makedirs(save_folder)
 
-        agent_copy_no_model = deepcopy(self)
-        agent_copy_no_model.model = None
+        # Créer un nouvel agent avec les mêmes paramètres
+        agent_copy_no_model = DetectionAgent(
+            transfo=self.transformations,
+            epochs=self.epochs,
+            train_size=self.train_size,
+            img_size=self.img_size,
+            batch_size=self.batch_size
+        )
+        agent_copy_no_model.encoder = self.encoder
 
         with open(agent_file, 'wb') as save_file:
             pickle.dump(agent_copy_no_model, save_file)
 
-        self.model.save(model_file) 
+        self.model.save(model_file)
+
+
 
     @staticmethod
     def load(load_folder):
@@ -144,6 +153,17 @@ class DetectionAgent:
         agent.model = load_model(model_file)
 
         return agent 
+
+    @staticmethod
+    def load_from_files(model_file_path, agent_file_path):
+        # Charger l'agent (sans modèle)
+        with open(agent_file_path, 'rb') as f:
+            agent = pickle.load(f)
+
+        # Charger le modèle keras
+        agent.model = load_model(model_file_path)
+
+        return agent
 
 
     def split_indices(self, n_samples):

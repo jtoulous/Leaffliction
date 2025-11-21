@@ -19,7 +19,7 @@ def ArgumentParsing():
     parser.add_argument('-imgs_folder', default='data/leaves', help='original images folder')
     parser.add_argument('-save_folder', default='DetectionAgent_1', help='output file')
     parser.add_argument('-epochs', type=int, default=10, help='')
-    parser.add_argument('-transfo', default=['gaussian_blur'], nargs='+', help='transfo')
+    parser.add_argument('-transfo', default=[], nargs='+', help='transfo')
 
     return parser.parse_args()
 
@@ -40,16 +40,6 @@ if __name__ == '__main__':
         for img_class, imgs_list in original_images.items():
             for img_name, img_types in imgs_list.items():
                 for img_type, img in img_types.items():
-
-                    if not isinstance(img, np.ndarray):
-                        print(f"ERREUR: {img_class}/{img_name} n'est pas un numpy array, type: {type(img)}")
-                        continue
-
-                    # Vérifiez les dimensions
-                    if len(img.shape) != 3 or img.shape[2] != 3:
-                        print(f"ATTENTION: {img_class}/{img_name} a des dimensions invalides: {img.shape}")
-                        continue
-
                     X.append(img)
                     y.append(img_class)
 
@@ -57,7 +47,7 @@ if __name__ == '__main__':
         y = np.array(y)
 
         agent = DetectionAgent(epochs=args.epochs, transfo=args.transfo)
-        agent.train(X, y, transfo=args.transfo)
+        agent.train(X, y)
         agent.save(args.save_folder)
 
 
