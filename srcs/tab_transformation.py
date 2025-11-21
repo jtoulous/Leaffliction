@@ -4,7 +4,7 @@ def tab_transformation():
     gr.Markdown("""
         ## Transformation
 
-        Select the source folder, graph type, and whether to include all images or only original images. Click "Display Distribution" to generate the graphs.
+        Select the source folder, destination folder, type of transformation, and other parameters. Click "Transform Images" to apply the transformations.
     """)
     with gr.Row():
         with gr.Column(scale=0, min_width=400):
