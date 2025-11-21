@@ -34,7 +34,7 @@ def tab_transformation():
             )
             transformation_button = gr.Button("Transform Images", variant="primary")
         with gr.Column():
-            status = gr.Textbox(label="Status", interactive=False)
+            status = gr.Textbox(label="Status", value="Waiting for transformation...", interactive=False)
             status_md = gr.Markdown("### Sample Transformed Images")
             with gr.Row():
                 image_output_1 = gr.Image(label="")
@@ -80,11 +80,12 @@ def tab_transformation():
 
         save_images(transformed_images, destination)
 
-        status_msg = f"Transformed {sum(len(imgs) for imgs in transformed_images.values())} images and saved to {destination}."
+        status_msg = f"Transformed {sum(len(imgs) for imgs in transformed_images.values())} images for a total of {sum(sum(len(variations) for variations in imgs.values()) for imgs in transformed_images.values())} and saved to {destination}."
 
         random_transformed_images = []
         if display == 'Yes' and random_image is not None:
-            for _, trans_img in transformed_images.items():
+            for cat_name, trans_img in transformed_images.items():
+                cat_name = cat_name
                 for img_name, trans in trans_img.items():
                     if np.array_equal(trans['original'], random_image['original']):
                         random_transformed_images.append(trans)
@@ -95,22 +96,32 @@ def tab_transformation():
         if len(random_transformed_images) > 0:
             trans_dict = random_transformed_images[0]
             idx = 0
-            for trans_type, img_array in trans_dict.items():
+
+            tmp_full_dict = {cat_name: {img_name: {'original': trans_dict['original']}}}
+
+            tmp = ImgTransformator(tmp_full_dict)
+            tmp.transform()
+
+            tmp_dict = tmp.images_structure[cat_name][img_name]
+
+            for trans_type in tmp_dict.keys():
                 if idx < 7:
+                    import cv2
+                    rgb_image = cv2.cvtColor(tmp_dict[trans_type], cv2.COLOR_BGR2RGB)
+
                     if trans_type == 'original':
                         file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}.JPG")
                     else:
                         file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}_{trans_type}.JPG")
-
                     if os.path.exists(file_path):
-                        image_outputs[idx] = gr.Image(value=file_path, label=trans_type, visible=True)
+                        label = f"{trans_type} (Saved and used to increase dataset)"
+                    else:
+                        label = f"{trans_type} (Not saved, only for display)"
+
+                    image_outputs[idx] = gr.Image(value=rgb_image, label=label, visible=True)
                     idx += 1
 
-            if idx < 7:
-                for j in range(idx, 7):
-                    image_outputs[j] = gr.Image(value=None, label="", visible=False)
-
-        status_md = f"### Sample Transformed Image: {img_name}" if len(random_transformed_images) > 0 else "### No transformed images to display."
+        status_md = f"### Sample Transformed Image: {cat_name}/{img_name}" if len(random_transformed_images) > 0 else "### No transformed images to display."
 
         return status_msg, status_md, *image_outputs
 

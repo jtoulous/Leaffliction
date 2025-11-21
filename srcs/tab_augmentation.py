@@ -34,7 +34,7 @@ def tab_augmentation():
             )
             augment_button = gr.Button("Augment Images", variant="primary")
         with gr.Column():
-            status = gr.Textbox(label="Status", interactive=False)
+            status = gr.Textbox(label="Status", value="Waiting for augmentation...", interactive=False)
             status_md = gr.Markdown("### Sample Augmented Images")
             with gr.Row():
                 image_original = gr.Image(label="") # 1
@@ -81,11 +81,12 @@ def tab_augmentation():
 
         save_images(augmented_images, destination)
 
-        status_msg = f"Augmented {sum(len(imgs) for imgs in augmented_images.values())} images and saved to {destination}."
+        status_msg = f"Augmented {sum(len(imgs) for imgs in augmented_images.values())} images for a total for {sum(sum(len(variations) for variations in imgs.values()) for imgs in augmented_images.values())} and saved to {destination}."
 
         random_augmented_images = []
         if display == 'Yes' and random_image is not None:
-            for _, aug_img in augmented_images.items():
+            for cat_name, aug_img in augmented_images.items():
+                cat_name = cat_name
                 for img_name, aug in aug_img.items():
                     if np.array_equal(aug['original'], random_image['original']):
                         random_augmented_images.append(aug)
@@ -96,22 +97,33 @@ def tab_augmentation():
         if len(random_augmented_images) > 0:
             aug_dict = random_augmented_images[0]
             idx = 0
-            for aug_type in aug_dict.keys():
+
+            tmp_full_dict = {cat_name: {img_name: {'original': aug_dict['original']}}}
+
+            tmp = ImgAugmentator(tmp_full_dict)
+            tmp.augment()
+
+            tmp_dict = tmp.images_structure[cat_name][img_name]
+
+            for aug_type in tmp_dict.keys():
                 if idx < 7:
+                    import cv2
+                    rgb_image = cv2.cvtColor(tmp_dict[aug_type], cv2.COLOR_BGR2RGB)
+
                     if aug_type == 'original':
                         file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}.JPG")
                     else:
                         file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}_{aug_type}.JPG")
 
                     if os.path.exists(file_path):
-                        image_outputs[idx] = gr.Image(value=file_path, label=aug_type, visible=True)
+                        label = f"{aug_type} (Saved and used to increase dataset)"
+                    else:
+                        label = f"{aug_type} (Not saved, only for display)"
+
+                    image_outputs[idx] = gr.Image(value=rgb_image, label=label, visible=True)
                     idx += 1
 
-            if idx < 7:
-                for j in range(idx, 7):
-                    image_outputs[j] = gr.Image(value=None, label="", visible=False)
-
-        status_md = f"### Sample Augmented Image: {img_name}" if len(random_augmented_images) > 0 else "### No augmented images to display."
+        status_md = f"### Sample Augmented Image: {cat_name}/{img_name}" if len(random_augmented_images) > 0 else "### No augmented images to display."
 
         return status_msg, status_md, *image_outputs
 
