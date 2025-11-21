@@ -10,7 +10,7 @@ from srcs.tools import load_original_images, save_images
 
 
 class ImgTransformator:
-    def __init__(self, images_structure):
+    def __init__(self, images_structure=None):
         """
         Initialize the ImgTransformator with a given structure of images.
 
@@ -19,7 +19,15 @@ class ImgTransformator:
         """
         self.images_structure = images_structure
 
-        return
+        self.function_map = {
+            'gaussian_blur': self.gaussian_blur,
+            'mask': self.mask,
+            'roi_objects': self.roi_objects,
+            'pseudolandmarks': self.pseudolandmarks,
+            'spots_isolation': self.spots_isolation,
+            'background_removal': self.background_removal,
+        }
+
 
     def transform(self, image=None, progress=None, task=None, display=False, transform=None):
         """
@@ -44,7 +52,9 @@ class ImgTransformator:
             'background_removal': self.background_removal,
         }
 
-        if image:
+        breakpoint()
+
+        if image is not None:
             transformed_images = {}
             transformed_images['original'] = image
             if transform in function_map:
@@ -60,6 +70,8 @@ class ImgTransformator:
                 cv2.destroyAllWindows()
 
             return transformed_images
+        
+
         else:
             if task is not None:
                 progress.update(task, total=sum(len(imgs) for imgs in self.images_structure.values()))
@@ -93,6 +105,12 @@ class ImgTransformator:
                     progress.update(task, description="↪ Images transformation")
 
         return self.images_structure
+
+    def quick_use(self, img, function_name):
+        transformed_image = self.function_map[function_name](img)
+        return transformed_image
+
+
 
     def gaussian_blur(self, image, k_size=(3, 3)):
         """
