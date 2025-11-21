@@ -19,7 +19,12 @@ input[type=number]::-webkit-inner-spin-button {
 with gr.Blocks(theme="default", css=css) as demo:
     gr.Markdown("# Leaffliction 🌿🍂")
     with gr.Tab("Home"):
-        gr.Markdown("Welcome to the Home tab!")
+        with open("README.md", "r") as f:
+            readme_content = f.read()
+        readme_content = readme_content.lstrip("# Leaffliction 🌿🍂\n")
+        gr.Markdown("## Welcome 👋 !\nFeel free to explore the tabs.\n")
+        with gr.Accordion("📖 Readme", open=True)   :
+            gr.Markdown(readme_content)
     with gr.Tab("Distribution"):
         tab_distribution()
     with gr.Tab("Augmentation"):

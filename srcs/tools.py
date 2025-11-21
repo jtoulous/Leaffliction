@@ -245,7 +245,7 @@ def range_processing(images, range_nb=None, range_percent=100):
     np.random.shuffle(all_images)
     all_images = all_images[:range_nb] if range_nb is not None else all_images
 
-    limit = int(len(all_images) * range_percent / 100)
+    limit = max(int(len(all_images) * range_percent / 100), 1)
     all_images = all_images[:limit]
 
     images = {}

@@ -51,8 +51,6 @@ class ImgTransformator:
             'background_removal': self.background_removal,
         }
 
-        breakpoint()
-
         if image is not None:
             transformed_images = {}
             transformed_images['original'] = image
@@ -69,7 +67,6 @@ class ImgTransformator:
                 cv2.destroyAllWindows()
 
             return transformed_images
-        
 
         else:
             if transform_list is not None:
