@@ -58,6 +58,7 @@ clean:
 fclean: clean
 	@echo "$(GREEN)Removing virtual environnement...$(RESET)"
 	@rm -rf venv
+	@rm -rf ~/goinfre/venv
 	@echo "$(GREEN) --> Done.$(RESET)"
 
 re: fclean all
