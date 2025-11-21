@@ -6,12 +6,13 @@ all: venv install unzip activate
 
 venv:
 	@echo "$(GREEN)Creating virtual environnement...$(RESET)"
-	@python -m venv venv
+	@mkdir -p ~/goinfre/Leaffliction/
+	@python -m venv ~/goinfre/Leaffliction/venv
 	@echo "$(GREEN) --> Done.$(RESET)"
 
 install:
 	@echo "$(GREEN)Installing dependencies...$(RESET)"
-	@. venv/bin/activate && pip install -r requirements.txt
+	@. ~/goinfre/Leaffliction/venv/bin/activate && pip install -r requirements.txt
 	@echo "$(GREEN) --> Done.$(RESET)"
 
 unzip:
