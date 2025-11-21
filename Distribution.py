@@ -38,6 +38,27 @@ class Distribution:
         if task is not None:
             progress.update(task, advance=1)
 
+    def get_distribution_graphs(self, graph_type=None):
+        """
+        Generate distribution graphs based on the specified type.
+
+        Args:
+            graph_type (str, optional): Type of graph to generate ('pie', 'bar', 'all').
+
+        Returns:
+            tuple: A tuple containing the pie chart and bar chart images.
+        """
+        pie_chart = None
+        bar_chart = None
+
+        if graph_type in ['pie', 'all', None]:
+            pie_chart = self._generate_pie_chart_image()
+
+        if graph_type in ['bar', 'all', None]:
+            bar_chart = self._generate_bar_plot_image()
+
+        return pie_chart, bar_chart
+
     def _pie_chart(self):
         """
         Generate a pie chart representing the distribution of images across classes.
@@ -80,6 +101,39 @@ class Distribution:
 
         fig.canvas.mpl_connect("motion_notify_event", on_hover)
         plt.show()
+
+    def _generate_pie_chart_image(self):
+        """
+        Generate a pie chart image as a numpy array.
+
+        Returns:
+            np.ndarray: The pie chart as an image array.
+        """
+        data = []
+        labels = []
+        chart = {}
+
+        for category, images in self.images_structure.items():
+            chart[category] = sum(len(variations) for variations in images.values())
+
+        chart = dict(sorted(chart.items(), key=lambda item: item[1], reverse=False))
+        data = list(chart.values())
+        labels = list(chart.keys())
+
+        colors = sns.color_palette('light:r_r', len(labels))
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
+
+        # Convert to image array
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
+        # Convert RGBA to RGB
+        image = image[:, :, :3]
+
+        plt.close(fig)
+        return image
 
     def _bar_plot(self):
         """
@@ -135,6 +189,47 @@ class Distribution:
         plt.tight_layout()
         plt.show()
 
+    def _generate_bar_plot_image(self):
+        """
+        Generate a bar plot image as a numpy array.
+
+        Returns:
+            np.ndarray: The bar plot as an image array.
+        """
+        data = []
+        labels = []
+        chart = {}
+
+        for category, images in self.images_structure.items():
+            chart[category] = sum(len(variations) for variations in images.values())
+
+        chart = dict(sorted(chart.items(), key=lambda item: item[0]))
+        data = list(chart.values())
+        labels = list(chart.keys())
+
+        sorted_indices = np.argsort(data)
+        colors = sns.color_palette('light:r_r', len(labels))
+        color_map = [colors[np.where(sorted_indices == i)[0][0]] for i in range(len(data))]
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.bar(labels, data, color=color_map)
+
+        ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+        ax.set_axisbelow(True)
+
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+
+        # Convert to image array
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
+        # Convert RGBA to RGB
+        image = image[:, :, :3]
+
+        plt.close(fig)
+        return image
+
 
 def ArgumentParsing():
     parser = ap.ArgumentParser()
@@ -143,11 +238,6 @@ def ArgumentParsing():
         type=str,
         default='data/leaves',
         help='Folder with original images (default: data/leaves)')
-    parser.add_argument(
-        '--seed',
-        type=int,
-        default=None,
-        help='Random seed for reproducibility (default: None)')
     parser.add_argument(
         '--distribution',
         type=str,
@@ -183,8 +273,6 @@ if __name__ == '__main__':
             else:
                 images, _ = load_original_images(args.source, progress=progress, task=images_load_task)
             progress.update(global_task, advance=1)
-
-            np.random.seed(args.seed)
 
             # Augment images
             display_task = progress.add_task("↪ Display distribution", total=2)

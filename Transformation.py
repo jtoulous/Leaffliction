@@ -596,6 +596,7 @@ def range_processing(images, range_nb=None, range_percent=100):
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
+        np.random.seed(args.seed)
 
         with Progress(
             SpinnerColumn(),
@@ -613,7 +614,6 @@ if __name__ == '__main__':
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
-            np.random.seed(args.seed)
             if type_of_load == 'File':
                 args.display = True
 

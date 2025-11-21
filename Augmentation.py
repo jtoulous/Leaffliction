@@ -7,7 +7,7 @@ from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeEl
 from srcs.tools import load_original_images, save_images, range_processing
 
 
-class ImgAugmentation:
+class ImgAugmentator:
     def __init__(self, images_structure):
         """
         Initialize the ImgAugmentation with a given structure of images.
@@ -17,6 +17,7 @@ class ImgAugmentation:
         """
         self.images_structure = images_structure
         self.max_disease_count = max(len(imgs) for imgs in images_structure.values())
+        self.original_structure = True
 
         return
 
@@ -55,18 +56,12 @@ class ImgAugmentation:
                 # Always add original
                 final_struct[category][img_key]['original'] = self.images_structure[category][img_key]['original']
 
-                # Add augmentations randomly until we reach the needed count
-                for i in range(transformations_per_image - 1):  # -1 because we already have 'original'
-                    aug_type = np.random.choice(augmentation_types)
+                # Add unique augmentations (one of each type maximum)
+                available_augmentations = augmentation_types.copy()
+                np.random.shuffle(available_augmentations)
 
-                    # Make unique keys if the same augmentation is used multiple times
-                    aug_key = aug_type
-                    counter = 1
-                    while aug_key in final_struct[category][img_key]:
-                        aug_key = f"{aug_type}_{counter}"
-                        counter += 1
-
-                    final_struct[category][img_key][aug_key] = 'TODO'
+                for aug_type in available_augmentations[:transformations_per_image - 1]:  # -1 because we already have 'original'
+                    final_struct[category][img_key][aug_type] = 'TODO'
 
                 if task is not None:
                     progress.update(task, advance=1)
@@ -87,6 +82,7 @@ class ImgAugmentation:
                             excess -= 1
 
         self.images_structure = final_struct
+        self.original_structure = False
 
         return self.images_structure
 
@@ -131,22 +127,40 @@ class ImgAugmentation:
             return augmented_images
         else:
             if task is not None:
-                total = sum(len(imgs) for imgs in self.images_structure.values() for imgs in imgs.values())
+                if self.original_structure:
+                    total = sum(len(imgs) for imgs in self.images_structure.values())
+                else:
+                    total = sum(len(imgs) for imgs in self.images_structure.values() for imgs in imgs.values())
                 progress.update(task, total=total)
 
             for category in self.images_structure:
                 for img_key in self.images_structure[category]:
                     augmented_images = {}
-                    for aug_type in self.images_structure[category][img_key]:
-                        if aug_type == 'original':
-                            augmented_images['original'] = self.images_structure[category][img_key]['original']
-                        else:
-                            if augmentation is None or aug_type == augmentation:
-                                aug_function = function_map.get(aug_type.split('_')[0], None)
-                                if aug_function:
-                                    augmented_images[aug_type] = aug_function(self.images_structure[category][img_key]['original'])
+
+                    if self.original_structure:
+                        image = self.images_structure[category][img_key]['original']
+                        augmented_images = {
+                            'original': image,
+                            **(
+                                {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
+                                if augmentation is None else
+                                {augmentation: function_map[augmentation](image)}
+                            )
+                        }
                         if task is not None:
                             progress.update(task, advance=1)
+                    else:
+                        for aug_type in self.images_structure[category][img_key]:
+                            if aug_type == 'original':
+                                augmented_images['original'] = self.images_structure[category][img_key]['original']
+                            else:
+                                if augmentation is None or aug_type == augmentation:
+                                    aug_function = function_map.get(aug_type, None)
+                                    if aug_function:
+                                        augmented_images[aug_type] = aug_function(self.images_structure[category][img_key]['original'])
+                            if task is not None:
+                                progress.update(task, advance=1)
+
                     self.images_structure[category][img_key] = augmented_images
 
                     if display:
@@ -449,6 +463,7 @@ def ArgumentParsing():
 if __name__ == '__main__':
     try:
         args = ArgumentParsing()
+        np.random.seed(args.seed)
 
         with Progress(
             SpinnerColumn(),
@@ -466,11 +481,9 @@ if __name__ == '__main__':
             images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
             progress.update(global_task, advance=1)
 
-            np.random.seed(args.seed)
-
             # Augment images
             images_augment_task = progress.add_task("↪ Images augmentation", total=2)
-            augmentator = ImgAugmentation(images)
+            augmentator = ImgAugmentator(images)
 
             if type_of_load == "File":
                 progress.update(images_augment_task, total=1)
