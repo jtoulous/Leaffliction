@@ -25,14 +25,20 @@ def tab_distribution():
                 bar_chart_output = gr.Image(label="Bar Chart Output")
 
     def display_distribution(source, distribution_type, all_images):
+        import os
         import numpy as np
         from Distribution import Distribution
         from srcs.tools import load_images, load_original_images
 
-        if all_images == 'Yes':
-            images, _ = load_images(source[0])
+        if len(source) == 2 and not os.path.isdir(source[1]):
+            source_path = source[-1]
         else:
-            images, _ = load_original_images(source[0])
+            source_path = source[0]
+
+        if all_images == 'Yes':
+            images, _ = load_images(source_path)
+        else:
+            images, _ = load_original_images(source_path)
 
         distribution_type = distribution_type.replace(' Chart', '').replace(' Plot', '').lower()
 
