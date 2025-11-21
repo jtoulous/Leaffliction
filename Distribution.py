@@ -16,17 +16,7 @@ class Distribution:
         Args:
             images_structure (dict): A dictionary containing images categorized by class names.
         """
-        self.images_structure = {}
-
-        if all_images:
-            for category, images in images_structure.items():
-                self.images_structure[category] = {}
-                for img_key, variations in images.items():
-                    for variation_name in variations.keys():
-                        combined_key = f"{img_key}_{variation_name}"
-                        self.images_structure[category][combined_key] = variations[variation_name]
-        else:
-            self.images_structure = images_structure
+        self.images_structure = images_structure
 
     def distribution(self, progress=None, task=None, graph_type=None):
         """
@@ -57,7 +47,7 @@ class Distribution:
         chart = {}
 
         for category, images in self.images_structure.items():
-            chart[category] = len(images)
+            chart[category] = sum(len(variations) for variations in images.values())
 
         chart = dict(sorted(chart.items(), key=lambda item: item[1], reverse=False))
         data = list(chart.values())
@@ -69,8 +59,8 @@ class Distribution:
         wedges, texts, autotexts = ax.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
 
         annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                           bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                           arrowprops=dict(arrowstyle="->"))
+                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
 
         def on_hover(event):
@@ -100,7 +90,7 @@ class Distribution:
         chart = {}
 
         for category, images in self.images_structure.items():
-            chart[category] = len(images)
+            chart[category] = sum(len(variations) for variations in images.values())
 
         chart = dict(sorted(chart.items(), key=lambda item: item[0]))
         data = list(chart.values())
@@ -119,8 +109,8 @@ class Distribution:
         plt.xticks(rotation=45)
 
         annot = ax.annotate("", xy=(0, 0), xytext=(-30, -40), textcoords="offset points",
-                           bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                           arrowprops=dict(arrowstyle="->"))
+                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+                            arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
 
         def on_hover(event):
@@ -149,7 +139,7 @@ class Distribution:
 def ArgumentParsing():
     parser = ap.ArgumentParser()
     parser.add_argument(
-        '--load-folder',
+        '--source',
         type=str,
         default='data/leaves',
         help='Folder with original images (default: data/leaves)')
@@ -189,9 +179,9 @@ if __name__ == '__main__':
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
             if args.all_images:
-                images = load_images(args.load_folder, progress=progress, task=images_load_task)
+                images, _ = load_images(args.source, progress=progress, task=images_load_task)
             else:
-                images = load_original_images(args.load_folder, progress=progress, task=images_load_task)
+                images, _ = load_original_images(args.source, progress=progress, task=images_load_task)
             progress.update(global_task, advance=1)
 
             np.random.seed(args.seed)
