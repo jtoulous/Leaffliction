@@ -1,4 +1,3 @@
 __pycache__/
 venv
-data/*
-!.gitkeep
+data/leaves*
