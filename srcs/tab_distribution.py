@@ -46,6 +46,7 @@ def tab_distribution():
             display_button = gr.Button("Display Distribution", variant="primary")
         with gr.Column():
             status = gr.Textbox(label="Status", value="Waiting for distribution...", interactive=False)
+            status_md = gr.Markdown("### Distribution Graphs")
             with gr.Row():
                 pie_chart_output = gr.Plot(label="Pie Chart Output")
                 bar_chart_output = gr.Plot(label="Bar Chart Output")
