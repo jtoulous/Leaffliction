@@ -6,9 +6,9 @@ import shutil
 import numpy as np
 
 from sklearn.preprocessing import LabelBinarizer
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.utils import Sequence
+from tensorflow.keras.models import Sequential, load_model  # type: ignore
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense  # type: ignore
+from tensorflow.keras.utils import Sequence  # type: ignore
 
 from Transformation import ImgTransformator
 
@@ -186,7 +186,7 @@ class DataManager(Sequence):
         return int(np.ceil(len(self.X) / self.batch_size))
 
     def __getitem__(self, index):
-        batch_indices = self.indices[index*self.batch_size:(index+1)*self.batch_size]
+        batch_indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
 
         X_batch = []
         y_batch = []
