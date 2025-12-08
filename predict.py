@@ -44,9 +44,9 @@ if __name__ == '__main__':
     try:
         args = ArgumentParsing()
 
-        agent = DetectionAgent.load(args.load_folder)
+        agent = DetectionAgent.load(args.model)
 
-        for img_path in args.imgs_paths:
+        for img_path in args.source:
             img = cv2.imread(img_path)
             prediction, transformed_images = agent.predict(img)
 
