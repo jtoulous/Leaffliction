@@ -248,11 +248,9 @@ class ImgAugmentator:
 
         if blur_factor % 2 == 0:
             blur_factor += 1
-        blurred_image = cv2.GaussianBlur(
-                image,
-                (blur_factor, blur_factor),
-                cv2.BORDER_DEFAULT
-            )
+        blurred_image = cv2.GaussianBlur(image,
+                                         (blur_factor, blur_factor),
+                                         cv2.BORDER_DEFAULT)
         return blurred_image
 
     def contrast(self, image, contrast=1.4):

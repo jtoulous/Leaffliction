@@ -275,8 +275,8 @@ class ImgTransformator:
             padding = 20
             x = max(0, x - padding)
             y = max(0, y - padding)
-            w = min(transformed_image.shape[1] - x, w + 2*padding)
-            h = min(transformed_image.shape[0] - y, h + 2*padding)
+            w = min(transformed_image.shape[1] - x, w + 2 * padding)
+            h = min(transformed_image.shape[0] - y, h + 2 * padding)
 
             # Draw the bounding rectangle in blue
             cv2.rectangle(transformed_image, (x, y), (x + w, y + h), (255, 0, 0), 3)
