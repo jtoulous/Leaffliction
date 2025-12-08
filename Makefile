@@ -29,7 +29,7 @@ unzip:
 
 activate:
 	@echo "$(GREEN) To activate the virtual environment, run: $(RESET)"
-	@echo "   '. venv/bin/activate'"
+	@echo "   '. ~/goinfre/venv/bin/activate'"
 	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
 	@echo "   'deactivate'"
 
