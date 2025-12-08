@@ -11,7 +11,7 @@ def tab_prediction():
         Select the images, and click 'Run Predictions'.
     """)
     with gr.Row():
-        
+
         with gr.Column(scale=0, min_width=400):
             source_input = gr.FileExplorer(
                 label="Source Folder",
@@ -26,20 +26,17 @@ def tab_prediction():
                 file_count="directory"  # PERMET DE DRAG & DROP UN DOSSIER
             )
             prediction_button = gr.Button("Run Prediction", variant="primary")
-        
+
         with gr.Column():
             prediction = gr.Textbox(label="Prediction", interactive=False)
             with gr.Row():
                 img_output = gr.Image(label="original_img")
-
 
     prediction_button.click(
         run_prediction,
         inputs=[source_input, agent_input],
         outputs=[prediction, img_output]
     )
-
-
 
 
 def run_prediction(source_img, agent_folder):

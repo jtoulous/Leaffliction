@@ -30,7 +30,7 @@ with gr.Blocks(theme="default", css=css) as demo:
         with open("README.md", "r") as f:
             readme_content = f.read()
         readme_content = readme_content.lstrip("# Leaffliction 🌿🍂\n")
-        with gr.Accordion("📖 Readme", open=False)   :
+        with gr.Accordion("📖 Readme", open=False):
             gr.Markdown(readme_content)
     with gr.Tab("Distribution"):
         tab_distribution()

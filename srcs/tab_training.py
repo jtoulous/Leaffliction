@@ -4,6 +4,7 @@ import numpy as np
 from srcs.tools import load_original_images
 from srcs.DetectionAgent import DetectionAgent
 
+
 def tab_training():
     gr.Markdown("""
         ## Training
@@ -53,7 +54,7 @@ def tab_training():
         with gr.Column():
             status = gr.Textbox(label="Status", interactive=False)
             with gr.Row():
-                results_output = gr.Image(label="Results")
+                gr.Image(label="Results")
 
     train_button.click(
         RunTraining,

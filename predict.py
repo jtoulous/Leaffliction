@@ -5,23 +5,21 @@ import numpy as np
 from srcs.DetectionAgent import DetectionAgent
 
 
-
 def ArgumentParsing():
     parser = ap.ArgumentParser()
-    parser.add_argument('imgs_paths', nargs='+', help='image path')
-    parser.add_argument('-load_folder', default='DetectionAgent_1', help='guess')
+    parser.add_argument('--source', nargs='+', help='Paths to images to predict on (can be multiple)')
+    parser.add_argument('--model', default='DetectionAgent_1', help='Model folder to load (default: DetectionAgent_1)')
 
     return parser.parse_args()
-
 
 
 def image_to_unicode(img, width=40):
     height = int(width * img.shape[0] / img.shape[1] / 2)  # /2 car caractères hauts
     small_img = cv2.resize(img, (width, height))
-    
+
     # Caractères de bloc Unicode
     blocks = [" ", "▀", "▄", "█"]
-    
+
     result = ""
     for i in range(0, height, 2):
         for j in range(width):
@@ -38,7 +36,7 @@ def image_to_unicode(img, width=40):
             else:
                 result += " "
         result += "\n"
-    
+
     return result
 
 
@@ -53,7 +51,7 @@ if __name__ == '__main__':
             prediction, transformed_images = agent.predict(img)
 
             print('\n====================================================\n')
-            
+
             # Afficher l'image originale en ASCII
             print(image_to_unicode(img))
 
@@ -64,8 +62,6 @@ if __name__ == '__main__':
             print('\n=====            DL classification            =====')
             print(f'\n           Class predicted : {prediction}')
             print('\n====================================================\n')
-
-
 
     except Exception as error:
         print(f'Error: {error}')

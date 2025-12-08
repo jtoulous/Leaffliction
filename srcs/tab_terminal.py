@@ -1,8 +1,8 @@
 import gradio as gr
 import subprocess
 import os
-import threading
 import queue
+
 
 class TerminalSession:
     def __init__(self, cwd=None):
@@ -70,8 +70,10 @@ class TerminalSession:
         except Exception as e:
             return f"Error: {str(e)}"
 
+
 # Global terminal session
 terminal_session = TerminalSession()
+
 
 def format_terminal_output(history):
     """Format the terminal history for display"""
@@ -83,6 +85,7 @@ def format_terminal_output(history):
         output.append("")  # Empty line for spacing
 
     return "\n".join(output)
+
 
 def process_command(command, current_output):
     """Process a command and update the terminal output"""
@@ -106,6 +109,7 @@ def process_command(command, current_output):
     output = format_terminal_output(terminal_session.history)
 
     return output, ""
+
 
 def tab_terminal():
     """Create the terminal tab interface"""

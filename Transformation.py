@@ -27,7 +27,6 @@ class ImgTransformator:
             'background_removal': self.background_removal,
         }
 
-
     def transform(self, image=None, progress=None, task=None, display=False, transform=None, transform_list=None):
         """
         Apply transformations to images.
@@ -126,8 +125,6 @@ class ImgTransformator:
     def quick_use(self, img, function_name):
         transformed_image = self.function_map[function_name](img)
         return transformed_image
-
-
 
     def gaussian_blur(self, image, k_size=(3, 3)):
         """
