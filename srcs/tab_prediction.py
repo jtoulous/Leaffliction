@@ -66,23 +66,27 @@ def run_prediction(source_img, agent_folder):
     if not isinstance(agent_folder, list) or len(agent_folder) == 0:
         raise ValueError("Invalid agent folder input")
 
-    model_file = None
+    model_weights_file = None
+    model_arch_file = None
     agent_file = None
 
     for f in agent_folder:
         name = os.path.basename(f.name)
-        if name == "model.keras":
-            model_file = f.name
+        if name == "model.weights.h5":
+            model_weights_file = f.name
         elif name == "agent.pkl":
             agent_file = f.name
 
-    if model_file is None or agent_file is None:
+        elif name == "model_architecture.json":
+            model_arch_file = f.name
+
+    if model_weights_file is None or agent_file is None:
         raise ValueError("model.keras and agent.pkl not found in uploaded folder")
 
     # ---------------------------
     #   RUN PRED
     # ---------------------------
-    agent = DetectionAgent.load_from_files(model_file, agent_file)
+    agent = DetectionAgent.load_from_files(model_weights_file, agent_file, model_arch_file)
     prediction, transformed_imgs = agent.predict(img)
 
     return prediction, img

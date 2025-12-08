@@ -112,13 +112,23 @@ class DetectionAgent:
         return self.encoder.inverse_transform(prediction)[0], transformed_images
 
     def save(self, save_folder):
-        model_file = os.path.join(save_folder, 'model.keras')
+        model_weights_file = os.path.join(save_folder, 'model.weights.h5')  # CHANGÉ: ajouté .weights
+        model_arch_file = os.path.join(save_folder, 'model_architecture.json')
         agent_file = os.path.join(save_folder, 'agent.pkl')
 
         if os.path.exists(save_folder):
             shutil.rmtree(save_folder)
         os.makedirs(save_folder)
 
+        # Sauvegarder l'architecture du modèle en JSON
+        model_arch = self.model.to_json()
+        with open(model_arch_file, 'w') as f:
+            f.write(model_arch)
+
+        # Sauvegarder seulement les poids (plus léger)
+        self.model.save_weights(model_weights_file)
+
+        # Garder exactement la même logique pour l'agent
         agent_copy_no_model = DetectionAgent(
             transfo=self.transformations,
             epochs=self.epochs,
@@ -131,29 +141,56 @@ class DetectionAgent:
         with open(agent_file, 'wb') as save_file:
             pickle.dump(agent_copy_no_model, save_file)
 
-        self.model.save(model_file)
-
     @staticmethod
     def load(load_folder):
-        model_file = os.path.join(load_folder, 'model.keras')
+        model_weights_file = os.path.join(load_folder, 'model.weights.h5')  # CHANGÉ
+        model_arch_file = os.path.join(load_folder, 'model_architecture.json')
         agent_file = os.path.join(load_folder, 'agent.pkl')
-        agent = None
 
         with open(agent_file, 'rb') as a_file:
             agent = pickle.load(a_file)
 
-        agent.model = load_model(model_file)
+        # Charger l'architecture depuis JSON
+        from tensorflow.keras.models import model_from_json
+        with open(model_arch_file, 'r') as f:
+            model_arch = f.read()
+
+        # Reconstruire le modèle
+        agent.model = model_from_json(model_arch)
+
+        # Charger les poids
+        agent.model.load_weights(model_weights_file)
+
+        # Recompiler le modèle
+        agent.model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
 
         return agent
 
     @staticmethod
-    def load_from_files(model_file_path, agent_file_path):
+    def load_from_files(model_weights_file_path, agent_file_path, model_arch_file_path):
         # Charger l'agent (sans modèle)
         with open(agent_file_path, 'rb') as f:
             agent = pickle.load(f)
 
-        # Charger le modèle keras
-        agent.model = load_model(model_file_path)
+#        # Charger le modèle keras
+#        agent.model = load_model(model_file_path)
+
+        from tensorflow.keras.models import model_from_json
+        with open(model_arch_file_path, 'r') as f:
+            model_arch = f.read()
+
+        agent.model = model_from_json(model_arch)
+        agent.model.load_weights(model_weights_file_path)
+
+        agent.model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
 
         return agent
 
