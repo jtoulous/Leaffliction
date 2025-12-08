@@ -275,8 +275,8 @@ class ImgTransformator:
             padding = 20
             x = max(0, x - padding)
             y = max(0, y - padding)
-            w = min(transformed_image.shape[1] - x, w + 2*padding)
-            h = min(transformed_image.shape[0] - y, h + 2*padding)
+            w = min(transformed_image.shape[1] - x, w + 2 * padding)
+            h = min(transformed_image.shape[0] - y, h + 2 * padding)
 
             # Draw the bounding rectangle in blue
             cv2.rectangle(transformed_image, (x, y), (x + w, y + h), (255, 0, 0), 3)
@@ -497,6 +497,43 @@ class ImgTransformator:
         leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_DILATE, kernel, iterations=1)
         # Remove small noise
         leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_ERODE, kernel, iterations=1)
+
+        # Grabcut refinement
+        if np.any(leaf_mask):
+            try:
+                # Initialize GrabCut mask
+                gc_mask = np.zeros(image.shape[:2], np.uint8)
+                gc_mask[:] = cv2.GC_PR_BGD  # Default to probable background
+
+                # Probable foreground from color mask
+                gc_mask[leaf_mask > 0] = cv2.GC_PR_FGD
+
+                # Sure background (outside dilated mask)
+                kernel_bg = np.ones((20, 20), np.uint8)
+                sure_bg = cv2.dilate(leaf_mask, kernel_bg, iterations=1)
+                gc_mask[sure_bg == 0] = cv2.GC_BGD
+
+                # Sure foreground (inside eroded mask)
+                kernel_fg = np.ones((10, 10), np.uint8)
+                sure_fg = cv2.erode(leaf_mask, kernel_fg, iterations=1)
+                gc_mask[sure_fg > 0] = cv2.GC_FGD
+
+                # Run GrabCut
+                bgdModel = np.zeros((1, 65), np.float64)
+                fgdModel = np.zeros((1, 65), np.float64)
+                cv2.grabCut(
+                    image, gc_mask, None, bgdModel, fgdModel,
+                    5, cv2.GC_INIT_WITH_MASK
+                )
+
+                # Update leaf_mask
+                mask2 = np.where(
+                    (gc_mask == 2) | (gc_mask == 0), 0, 1
+                ).astype('uint8')
+                leaf_mask = mask2 * 255
+
+            except Exception:
+                pass
 
         # Find ALL contours and select the largest
         contours, _ = cv2.findContours(leaf_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

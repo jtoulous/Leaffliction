@@ -61,7 +61,7 @@ def tab_transformation():
         else:
             source_path = source[0]
 
-        images, type_of_load = load_images(source_path)
+        images, _ = load_images(source_path)
         images = range_processing(images, range_percent=range_percent, range_nb=range_nb if range_nb != 0 else None)
 
         # Get a random image from the nested structure
