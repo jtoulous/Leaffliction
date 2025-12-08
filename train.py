@@ -6,12 +6,9 @@ import numpy as np
 from srcs.tools import load_original_images
 from srcs.DetectionAgent import DetectionAgent
 
-
 # Suppression des warnings
 warnings.filterwarnings('ignore')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-
 
 
 def ArgumentParsing():
@@ -22,9 +19,6 @@ def ArgumentParsing():
     parser.add_argument('--transfo', default=[], nargs='+', help='Transformations to apply during training')
 
     return parser.parse_args()
-
-
-
 
 
 if __name__ == '__main__':
@@ -49,7 +43,6 @@ if __name__ == '__main__':
         agent = DetectionAgent(epochs=args.epochs, transfo=args.transfo)
         agent.train(X, y)
         agent.save(args.save_folder)
-
 
     except Exception as error:
         print(f'Error: {error}')
