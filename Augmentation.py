@@ -225,7 +225,7 @@ class ImgAugmentator:
             borderValue=border_value,
         )
 
-        return rotated_image
+        return cv2.resize(rotated_image, (image.shape[1], image.shape[0]))
 
     def blur(self, image, blur_factor=5):
         """
@@ -251,7 +251,7 @@ class ImgAugmentator:
         blurred_image = cv2.GaussianBlur(image,
                                          (blur_factor, blur_factor),
                                          cv2.BORDER_DEFAULT)
-        return blurred_image
+        return cv2.resize(blurred_image, (image.shape[1], image.shape[0]))
 
     def contrast(self, image, contrast=1.4):
         """
@@ -272,7 +272,7 @@ class ImgAugmentator:
             return []
 
         contrasted_image = cv2.convertScaleAbs(image, alpha=contrast)
-        return contrasted_image
+        return cv2.resize(contrasted_image, (image.shape[1], image.shape[0]))
 
     def scaling(self, image, scale_factor=1.2):
         """
@@ -319,7 +319,7 @@ class ImgAugmentator:
             borderValue=border_value,
         )
 
-        return scaled_image
+        return cv2.resize(scaled_image, (image.shape[1], image.shape[0]))
 
     def illumination(self, image, brightness=60):
         """
@@ -340,7 +340,7 @@ class ImgAugmentator:
             return []
 
         illuminated_image = cv2.convertScaleAbs(image, beta=brightness)
-        return illuminated_image
+        return cv2.resize(illuminated_image, (image.shape[1], image.shape[0]))
 
     def projective(self, image, intensity=0.2):
         """
@@ -408,7 +408,7 @@ class ImgAugmentator:
             borderValue=border_value
         )
 
-        return projective_image
+        return cv2.resize(projective_image, (image.shape[1], image.shape[0]))
 
 
 def ArgumentParsing():
