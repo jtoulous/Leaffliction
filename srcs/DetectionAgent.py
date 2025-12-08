@@ -124,7 +124,6 @@ class DetectionAgent:
             shutil.rmtree(save_folder)
         os.makedirs(save_folder)
 
-        # Créer un nouvel agent avec les mêmes paramètres
         agent_copy_no_model = DetectionAgent(
             transfo=self.transformations,
             epochs=self.epochs,
