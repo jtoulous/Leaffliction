@@ -16,14 +16,20 @@ install:
 
 unzip:
 	@echo "$(GREEN)Unzipping data files...$(RESET)"
-	@unzip -o data/leaves.zip -d data/leaves
+	@for file in data/*.zip; do \
+		if [ -f "$$file" ]; then \
+			unzip -o "$$file" -d data/`basename "$$file" .zip`; \
+		else \
+			echo "$(RED)No zip files found in data/ folder.$(RESET)"; \
+		fi \
+	done
 	@mv data/leaves/images/* data/leaves/ -n
 	@rm -rf data/leaves/images/
 	@echo "$(GREEN) --> Done.$(RESET)"
 
 activate:
 	@echo "$(GREEN) To activate the virtual environment, run: $(RESET)"
-	@echo "   '. venv/bin/activate'"
+	@echo "   '. ~/goinfre/venv/bin/activate'"
 	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
 	@echo "   'deactivate'"
 

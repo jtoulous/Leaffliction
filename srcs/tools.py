@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 
+
 def load_original_images(load_folder, progress=None, task=None):
     """
     Load original images from the specified folder structure.

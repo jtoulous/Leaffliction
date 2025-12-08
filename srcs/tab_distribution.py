@@ -26,6 +26,7 @@ gradio_template = go.layout.Template(
     )
 )
 
+
 def tab_distribution():
     gr.Markdown("""
         ## Distribution
@@ -46,6 +47,7 @@ def tab_distribution():
             display_button = gr.Button("Display Distribution", variant="primary")
         with gr.Column():
             status = gr.Textbox(label="Status", value="Waiting for distribution...", interactive=False)
+            gr.Markdown("### Distribution Graphs")
             with gr.Row():
                 pie_chart_output = gr.Plot(label="Pie Chart Output")
                 bar_chart_output = gr.Plot(label="Bar Chart Output")
@@ -79,7 +81,7 @@ def tab_distribution():
             'values': list(counts)
         })
         fig = px.pie(pie_df, values='values', names='category',
-                    color_discrete_sequence=['#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66', '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'])
+                     color_discrete_sequence=['#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66', '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'])
         fig.update_layout(template=gradio_template)
         pie_chart = gr.Plot(
             value=fig,
@@ -92,9 +94,9 @@ def tab_distribution():
         })
 
         bar_fig = px.bar(bar_df, x='Category', y='Count',
-                        title='Image Distribution by Category',
-                        color='Category',
-                        color_discrete_sequence=['#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66', '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'])
+                         title='Image Distribution by Category',
+                         color='Category',
+                         color_discrete_sequence=['#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66', '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'])
         bar_fig.update_layout(template=gradio_template, showlegend=False)
         bar_image = gr.Plot(
             value=bar_fig,

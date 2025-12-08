@@ -5,6 +5,7 @@ from srcs.tab_augmentation import tab_augmentation
 from srcs.tab_transformation import tab_transformation
 from srcs.tab_training import tab_training
 from srcs.tab_prediction import tab_prediction
+from srcs.tab_terminal import tab_terminal
 
 css = """
 * {
@@ -14,16 +15,22 @@ css = """
 input[type=number]::-webkit-inner-spin-button {
     -webkit-appearance: none;
 }
+#run-button-column {
+    align-self: stretch;
+}
+#run-button-column button {
+    height: 100%;
+}
 """
 
 with gr.Blocks(theme="default", css=css) as demo:
     gr.Markdown("# Leaffliction 🌿🍂")
     with gr.Tab("Home"):
+        tab_terminal()
         with open("README.md", "r") as f:
             readme_content = f.read()
         readme_content = readme_content.lstrip("# Leaffliction 🌿🍂\n")
-        gr.Markdown("## Welcome 👋 !\nFeel free to explore the tabs.\n")
-        with gr.Accordion("📖 Readme", open=True)   :
+        with gr.Accordion("📖 Readme", open=False):
             gr.Markdown(readme_content)
     with gr.Tab("Distribution"):
         tab_distribution()

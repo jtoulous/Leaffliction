@@ -1,5 +1,6 @@
 import gradio as gr
 
+
 def tab_augmentation():
     gr.Markdown("""
         ## Augmentation
@@ -37,15 +38,16 @@ def tab_augmentation():
             status = gr.Textbox(label="Status", value="Waiting for augmentation...", interactive=False)
             status_md = gr.Markdown("### Sample Augmented Images")
             with gr.Row():
-                image_original = gr.Image(label="") # 1
-                image_blur = gr.Image(label="") # 3
-                image_scaled = gr.Image(label="") # 5
+                image_original = gr.Image(label="")  # 1
+                image_blur = gr.Image(label="")  # 3
+                image_scaled = gr.Image(label="")  # 5
             with gr.Row():
-                image_illumination = gr.Image(label="") # 6
-                image_contrast = gr.Image(label="") # 4
+                image_illumination = gr.Image(label="")  # 6
+                image_contrast = gr.Image(label="")  # 4
             with gr.Row():
-                image_rotate = gr.Image(label="") # 2
-                image_perspective = gr.Image(label="") # 7
+                image_rotate = gr.Image(label="")  # 2
+                image_perspective = gr.Image(label="")  # 7
+
     def display_augmentation(source, destination, range_percent, range_nb, seed, augmentation_type, display):
         import numpy as np
         import os

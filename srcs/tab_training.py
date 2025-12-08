@@ -4,6 +4,7 @@ import numpy as np
 from srcs.tools import load_original_images
 from srcs.DetectionAgent import DetectionAgent
 
+
 def tab_training():
     gr.Markdown("""
         ## Training
@@ -22,7 +23,7 @@ def tab_training():
             transformations_input = gr.CheckboxGroup(
                 choices=[
                     'gaussian_blur',
-                    'mask', 
+                    'mask',
                     'roi_objects',
                     'pseudolandmarks',
                     'spots_isolation',
@@ -31,15 +32,15 @@ def tab_training():
                 label="Transformations",
                 value=['gaussian_blur']
             )
-            
+
             # Training Parameters
-            with gr.Group():
+            with gr.Column():
                 gr.Markdown("### Training Parameters")
                 epochs_input = gr.Number(label="Epochs", value=10, precision=0)
                 batch_size_input = gr.Number(label="Batch Size", value=32, precision=0)
-            
-            # Save Parameters  
-            with gr.Group():
+
+            # Save Parameters
+            with gr.Column():
                 gr.Markdown("### Save Parameters")
                 save_folder_input = gr.Textbox(
                     label="Save Folder Path",
@@ -47,18 +48,18 @@ def tab_training():
                     placeholder="Ex: models/agent1"
                 )
                 save_name_input = gr.Textbox(label="Agent Name", value="DetectionAgent_1")
-            
+
             train_button = gr.Button("Run Training", variant="primary")
-        
+
         with gr.Column():
             status = gr.Textbox(label="Status", interactive=False)
             with gr.Row():
-                results_output = gr.Image(label="Results")
+                gr.Image(label="Results")
 
     train_button.click(
         RunTraining,
         inputs=[
-            source_input, 
+            source_input,
             transformations_input,
             save_folder_input,
             save_name_input,
@@ -72,7 +73,7 @@ def tab_training():
 def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, batch_size):
     try:
         save_path = os.path.join(save_folder, save_name)
-        
+
         X = []
         y = []
 
@@ -96,6 +97,6 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
         agent.save(save_path)
 
         return 'Training Successful'
-    
+
     except Exception as e:
         return f'Error during training: {str(e)}'
