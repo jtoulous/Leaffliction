@@ -23,7 +23,7 @@ input[type=number]::-webkit-inner-spin-button {
 }
 """
 
-with gr.Blocks(theme="default", css=css) as demo:
+with gr.Blocks(theme="default", css=css, fill_width=True) as demo:
     gr.Markdown("# Leaffliction 🌿🍂")
     with gr.Tab("Home"):
         tab_terminal()
