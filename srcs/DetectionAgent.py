@@ -85,13 +85,7 @@ class DetectionAgent:
             metrics=['accuracy']
         )
 
-        # history = self.model.fit(
-        #     train_data_manager,
-        #     validation_data=test_data_manager,
-        #     epochs=self.epochs,
-        # ) # See if history is needed
-
-        self.model.fit(
+        history = self.model.fit(
             train_data_manager,
             validation_data=test_data_manager,
             epochs=self.epochs,
@@ -99,6 +93,8 @@ class DetectionAgent:
 
         test_loss, test_accuracy = self.model.evaluate(test_data_manager)
         print(f"Accuracy sur validation: {test_accuracy:.2%}")
+
+        return history, test_accuracy, test_loss
 
     def predict(self, img):
         X = cv2.resize(img, self.img_size)
@@ -217,7 +213,7 @@ class DataManager(Sequence):
         self.img_size = img_size
         self.batch_size = batch_size
         self.transformations = transformations or []
-        self.transformator = ImgTransformator()
+        self.transformator = ImgTransformator(super_background=False)
         self.shuffle = shuffle
 
         self.indices = np.arange(len(X))
