@@ -156,7 +156,7 @@ class DetectionAgent:
             agent = pickle.load(a_file)
 
         # Charger l'architecture depuis JSON
-        from tensorflow.keras.models import model_from_json
+        from tensorflow.keras.models import model_from_json  # type: ignore # noqa: E402
         with open(model_arch_file, 'r') as f:
             model_arch = f.read()
 
@@ -184,7 +184,7 @@ class DetectionAgent:
 #        # Charger le modèle keras
 #        agent.model = load_model(model_file_path)
 
-        from tensorflow.keras.models import model_from_json
+        from tensorflow.keras.models import model_from_json  # type: ignore # noqa: E402
         with open(model_arch_file_path, 'r') as f:
             model_arch = f.read()
 
