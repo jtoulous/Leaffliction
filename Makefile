@@ -28,11 +28,12 @@ unzip:
 	@echo "$(GREEN) --> Done.$(RESET)"
 
 activate:
+	@echo "$(GREEN) To activate the virtual environment, run: $(RESET)"
+	@echo "   '. ~/goinfre/venv/bin/activate'"
+	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
+	@echo "   'deactivate'"
+	@echo "\n$(GREEN)Launching the Gradio app...$(RESET)"
 	@. ~/goinfre/venv/bin/activate && gradio app.py
-#	@echo "$(GREEN) To activate the virtual environment, run: $(RESET)"
-#	@echo "   '. ~/goinfre/venv/bin/activate'"
-#	@echo "\n$(GREEN) To deactivate the virtual environment, run: $(RESET)"
-#	@echo "   'deactivate'"
 
 zip:
 	@echo "$(GREEN)Zipping data files...$(RESET)"
