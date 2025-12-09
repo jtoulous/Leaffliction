@@ -3,7 +3,7 @@ import warnings
 import argparse as ap
 import numpy as np
 
-from srcs.tools import load_original_images
+from srcs.tools import load_images
 from srcs.DetectionAgent import DetectionAgent
 
 # Suppression des warnings
@@ -30,7 +30,6 @@ if __name__ == '__main__':
 
         total = 0
 
-#        original_images, type_of_load = load_original_images(args.source)
         original_images, type_of_load = load_images(args.source)
         for img_class, imgs_list in original_images.items():
             for img_name, img_types in imgs_list.items():
