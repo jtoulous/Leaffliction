@@ -6,11 +6,16 @@ import shutil
 import numpy as np
 
 from sklearn.preprocessing import LabelBinarizer
-from tensorflow.keras.models import Sequential, load_model  # type: ignore
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense  # type: ignore
-from tensorflow.keras.utils import Sequence  # type: ignore
 
-from Transformation import ImgTransformator
+# Silence TensorFlow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+from tensorflow.keras.models import Sequential  # type: ignore # noqa: E402
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense  # type: ignore # noqa: E402
+from tensorflow.keras.utils import Sequence  # type: ignore # noqa: E402
+
+from Transformation import ImgTransformator  # noqa: E402
 
 
 class DetectionAgent:
