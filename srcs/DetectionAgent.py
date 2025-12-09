@@ -104,7 +104,7 @@ class DetectionAgent:
 
         prediction = self.model.predict(X)
 
-        transformer = ImgTransformator()
+        transformer = ImgTransformator(super_background=False)
 
         transformed_images = []
         for transfo in self.transformations:
