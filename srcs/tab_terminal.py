@@ -89,8 +89,6 @@ def format_terminal_output(history):
 
 def process_command(command, current_output):
     """Process a command and update the terminal output"""
-    global terminal_session
-
     if not command.strip():
         return current_output, ""
 
