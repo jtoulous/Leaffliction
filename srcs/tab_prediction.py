@@ -43,15 +43,40 @@ def run_prediction(source_img, agent_folder):
     # ---------------------------
     #   SOURCE IMAGE
     # ---------------------------
-    # FileExplorer peut renvoyer : str, dict, list
-    if len(source_img) == 2 and not os.path.isdir(source_img[1]):
-        source_path = source_img[-1]
-    else:
-        source_path = source_img[0]
-
     from srcs.tools import load_images
 
-    images, type_of_load = load_images(source_path)
+    # Handle FileExplorer output: can be str, dict, or list
+    if isinstance(source_img, list):
+        # If multiple files selected, process only those files
+        if len(source_img) > 0:
+            images = {}
+            img_counter = 0
+            for img_path in source_img:
+                if os.path.isfile(img_path):
+                    parent_dir = os.path.dirname(img_path)
+                    class_name = os.path.basename(parent_dir)
+                    image_file = os.path.basename(img_path)
+                    image_basename = os.path.splitext(image_file)[0]
+
+                    # Create unique key for each file
+                    unique_key = f"{image_basename}_{img_counter}"
+                    img_counter += 1
+
+                    if class_name not in images:
+                        images[class_name] = {}
+
+                    images[class_name][unique_key] = {
+                        'original': cv2.imread(img_path)
+                    }
+        else:
+            raise ValueError("No images selected")
+        type_of_load = "Multiple"
+    else:
+        # Single path (file or folder)
+        images, type_of_load = load_images(source_img)
+
+    print(f"Loaded images using method: {type_of_load}")
+    print(f"Number of images loaded: {sum(len(imgs) for imgs in images.values())}")
 
     # ---------------------------
     #   AGENT FILES
@@ -115,7 +140,7 @@ def run_prediction(source_img, agent_folder):
                 target_img_bgr, 10, 10, 10, 10,
                 cv2.BORDER_CONSTANT, value=border_color
             )
-            gallery_images.append((cv2.cvtColor(img_border, cv2.COLOR_BGR2RGB), f"{img_name} (Original)"))
+            gallery_images.append((cv2.cvtColor(img_border, cv2.COLOR_BGR2RGB), f"{img_name} | Pred: {prediction} | True: {cat}"))
 
             # Add transformed images to gallery (convert to RGB)
             for i, t_img in enumerate(transformed_imgs_bgr):
@@ -124,9 +149,14 @@ def run_prediction(source_img, agent_folder):
                     cv2.BORDER_CONSTANT, value=border_color
                 )
                 label = agent.transformations[i] if i < len(agent.transformations) else f"Transfo {i+1}"
-                gallery_images.append((cv2.cvtColor(t_img_border, cv2.COLOR_BGR2RGB), f"{img_name} ({label})"))
+                gallery_images.append((cv2.cvtColor(t_img_border, cv2.COLOR_BGR2RGB), f"{label} | Pred: {prediction} | True: {cat}"))
 
-    accuracy = (correct_count / total_count * 100) if total_count > 0 else 0
-    accuracy_status = f"Global Accuracy: {accuracy:.2f}% ({correct_count}/{total_count})\n\n" + "\n".join(predictions_list)
+    if total_count > 1:
+        # Multiple images: show accuracy
+        accuracy = (correct_count / total_count * 100) if total_count > 0 else 0
+        accuracy_status = f"Global Accuracy: {accuracy:.2f}% ({correct_count}/{total_count})"
+    else:
+        # Single image: just show prediction
+        accuracy_status = "\n".join(predictions_list)
 
     return accuracy_status, gallery_images
