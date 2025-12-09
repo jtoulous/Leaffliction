@@ -23,8 +23,8 @@ def tab_transformation():
             display_output = gr.Radio(choices=['Yes', 'No'], label="Display image augmentation", value='Yes')
             source_input = gr.FileExplorer(
                 label="Source Folder",
-                value="leaves",
-                glob="**/*",
+                value=None,
+                glob="**/*.JPG",
                 root_dir="data/",
                 ignore_glob="__pycache__"
             )
@@ -52,16 +52,11 @@ def tab_transformation():
         import numpy as np
         import os
         from Transformation import ImgTransformator
-        from srcs.tools import load_images, save_images, range_processing
+        from srcs.tools import load_images_from_list, save_images, range_processing
 
         np.random.seed(seed if seed != 0 else None)
 
-        if len(source) == 2 and not os.path.isdir(source[1]):
-            source_path = source[-1]
-        else:
-            source_path = source[0]
-
-        images, _ = load_images(source_path)
+        images = load_images_from_list(source, original=False)
         images = range_processing(images, range_percent=range_percent, range_nb=range_nb if range_nb != 0 else None)
 
         # Get a random image from the nested structure

@@ -15,7 +15,7 @@ def tab_prediction():
         with gr.Column(scale=0, min_width=400):
             source_input = gr.FileExplorer(
                 label="Source Folder",
-                value="leaves",
+                value=None,
                 glob="**/*.JPG",
                 root_dir="data/",
                 ignore_glob="__pycache__"
@@ -54,58 +54,27 @@ def tab_prediction():
 
     prediction_button.click(
         run_prediction,
-        inputs=[source_input, agent_input, range_test_input, seed_input, use_range_checkbox, range_test_input, seed_input],
+        inputs=[source_input, agent_input, range_test_input, seed_input, use_range_checkbox],
         outputs=[prediction_accuracy_status, img_output]
     )
 
 
-def run_prediction(source_img, agent_folder, range_test, seed, use_range, range_value, seed_value):
+def run_prediction(source_img, agent_folder, range_test, seed, use_range):
 
     # ---------------------------
     #   SOURCE IMAGE
     # ---------------------------
-    from srcs.tools import load_images
+    from srcs.tools import load_images_from_list
 
-    # Handle FileExplorer output: can be str, dict, or list
-    if isinstance(source_img, list):
-        # If multiple files selected, process only those files
-        if len(source_img) > 0:
-            images = {}
-            img_counter = 0
-            for img_path in source_img:
-                if os.path.isfile(img_path):
-                    parent_dir = os.path.dirname(img_path)
-                    class_name = os.path.basename(parent_dir)
-                    image_file = os.path.basename(img_path)
-                    image_basename = os.path.splitext(image_file)[0]
-
-                    # Create unique key for each file
-                    unique_key = f"{image_basename}_{img_counter}"
-                    img_counter += 1
-
-                    if class_name not in images:
-                        images[class_name] = {}
-
-                    images[class_name][unique_key] = {
-                        'original': cv2.imread(img_path)
-                    }
-        else:
-            raise ValueError("No images selected")
-        type_of_load = "Multiple"
-    else:
-        # Single path (file or folder)
-        images, type_of_load = load_images(source_img)
+    images = load_images_from_list(source_img)
 
     if use_range:
         import numpy as np
         from srcs.tools import range_processing
 
         np.random.seed(seed)
-        images = range_processing(images, range_nb=range_value)
+        images = range_processing(images, range_nb=range_test)
         np.random.seed(None)
-
-    print(f"Loaded images using method: {type_of_load}")
-    print(f"Number of images loaded: {sum(len(imgs) for imgs in images.values())}")
 
     # ---------------------------
     #   AGENT FILES

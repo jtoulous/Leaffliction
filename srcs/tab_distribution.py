@@ -39,8 +39,8 @@ def tab_distribution():
             all_images_input = gr.Radio(choices=['Yes', 'No'], label="All Images (including augmented images)", value='No')
             source_input = gr.FileExplorer(
                 label="Source Folder",
-                value="leaves",
-                glob="**/*",
+                value=None,
+                glob="**/*.JPG",
                 root_dir="data/",
                 ignore_glob="__pycache__"
             )
@@ -53,20 +53,11 @@ def tab_distribution():
                 bar_chart_output = gr.Plot(label="Bar Chart Output")
 
     def display_distribution(source, distribution_type, all_images):
-        import os
         import pandas as pd
         import plotly.express as px
-        from srcs.tools import load_images, load_original_images
+        from srcs.tools import load_images_from_list
 
-        if len(source) == 2 and not os.path.isdir(source[1]):
-            source_path = source[-1]
-        else:
-            source_path = source[0]
-
-        if all_images == 'Yes':
-            images, _ = load_images(source_path)
-        else:
-            images, _ = load_original_images(source_path)
+        images = load_images_from_list(source, original=False if all_images == 'Yes' else True)
 
         distribution_type = distribution_type.replace(' Chart', '').replace(' Plot', '').lower()
 

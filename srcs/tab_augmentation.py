@@ -23,8 +23,8 @@ def tab_augmentation():
             display_output = gr.Radio(choices=['Yes', 'No'], label="Display image augmentation", value='Yes')
             source_input = gr.FileExplorer(
                 label="Source Folder",
-                value="leaves",
-                glob="**/*",
+                value=None,
+                glob="**/*.JPG",
                 root_dir="data/",
                 ignore_glob="__pycache__"
             )
@@ -52,16 +52,11 @@ def tab_augmentation():
         import numpy as np
         import os
         from Augmentation import ImgAugmentator
-        from srcs.tools import load_original_images, save_images, range_processing
+        from srcs.tools import load_images_from_list, save_images, range_processing
 
         np.random.seed(seed if seed != 0 else None)
 
-        if len(source) == 2 and not os.path.isdir(source[1]):
-            source_path = source[-1]
-        else:
-            source_path = source[0]
-
-        images, type_of_load = load_original_images(source_path)
+        images = load_images_from_list(source, original=True)
         images = range_processing(images, range_percent=range_percent, range_nb=range_nb if range_nb != 0 else None)
 
         # Get a random image from the nested structure
@@ -73,7 +68,8 @@ def tab_augmentation():
                 random_image = images[random_category][random_key]
 
         augmentator = ImgAugmentator(images)
-        if type_of_load != 'File':
+        total_images = sum(len(imgs) for imgs in images.values())
+        if total_images > 1:
             augmentator.update_image_struct()
 
         if augmentation_type == 'All':

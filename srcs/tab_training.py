@@ -3,7 +3,7 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from srcs.tools import load_images
+from srcs.tools import load_images_from_list
 from srcs.DetectionAgent import DetectionAgent
 
 # from tools import load_original_images, load_images
@@ -46,8 +46,8 @@ def tab_training():
         with gr.Column(scale=0, min_width=400):
             source_input = gr.FileExplorer(
                 label="Source Folder",
-                value="leaves",
-                glob="**/*",
+                value=None,
+                glob="**/*.JPG",
                 root_dir="data/",
                 ignore_glob="__pycache__"
             )
@@ -121,22 +121,16 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
         X = []
         y = []
 
-        if len(imgs_folder) == 2 and not os.path.isdir(imgs_folder[1]):
-            source_path = imgs_folder[-1]
-        else:
-            source_path = imgs_folder[0]
-
         np.random.seed(seed)
 
-        # original_images, type_of_load = load_original_images(source_path)
-        original_images, type_of_load = load_images(source_path)
-        total_images = sum(len(imgs) for imgs in original_images.values())
+        images = load_images_from_list(imgs_folder, original=False)
+        total_images = sum(len(imgs) for imgs in images.values())
         range_total = total_images - range_test if range_test < total_images else total_images
-        original_images = range_processing(original_images, range_nb=range_total)
+        images = range_processing(images, range_nb=range_total)
 
         np.random.seed(None)
 
-        for img_class, imgs_list in original_images.items():
+        for img_class, imgs_list in images.items():
             for img_name, img_types in imgs_list.items():
                 for img_type, img in img_types.items():
                     X.append(img)
