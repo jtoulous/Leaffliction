@@ -69,6 +69,15 @@ def tab_training():
                 gr.Markdown("### Training Parameters")
                 epochs_input = gr.Number(label="Epochs", value=10, precision=0)
                 batch_size_input = gr.Number(label="Batch Size", value=32, precision=0)
+                range_test_input = gr.Slider(
+                    minimum=0,
+                    maximum=500,
+                    step=1,
+                    label="Number of images to exclude from training",
+                    value=100,
+                    interactive=True
+                )
+                seed_input = gr.Number(label="Seed for splitting data", value=42, precision=0)
 
             # Save Parameters
             with gr.Column():
@@ -95,14 +104,18 @@ def tab_training():
             save_folder_input,
             save_name_input,
             epochs_input,
-            batch_size_input
+            batch_size_input,
+            range_test_input,
+            seed_input
         ],
         outputs=[training_status, training_results]
     )
 
 
-def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, batch_size):
+def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, batch_size, range_test, seed):
     try:
+        from srcs.tools import range_processing
+
         save_path = os.path.join(save_folder, save_name)
 
         X = []
@@ -113,8 +126,15 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
         else:
             source_path = imgs_folder[0]
 
+        np.random.seed(seed)
+
         # original_images, type_of_load = load_original_images(source_path)
         original_images, type_of_load = load_images(source_path)
+        total_images = sum(len(imgs) for imgs in original_images.values())
+        range_total = total_images - range_test if range_test < total_images else total_images
+        original_images = range_processing(original_images, range_nb=range_total)
+
+        np.random.seed(None)
 
         for img_class, imgs_list in original_images.items():
             for img_name, img_types in imgs_list.items():

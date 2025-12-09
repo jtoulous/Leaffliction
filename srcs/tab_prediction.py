@@ -20,6 +20,18 @@ def tab_prediction():
                 root_dir="data/",
                 ignore_glob="__pycache__"
             )
+            use_range_checkbox = gr.Checkbox(label="Use range to limit number of images", value=True)
+            range_test_input = gr.Slider(
+                minimum=0,
+                maximum=500,
+                step=1,
+                label="Number of images that have been excluded from training",
+                value=100,
+                interactive=True,
+                visible=True
+            )
+            seed_input = gr.Number(label="Seed that was used for splitting data", value=42, precision=0, visible=True)
+
             agent_input = gr.File(
                 label="Agent Folder",
                 file_count="directory"  # PERMET DE DRAG & DROP UN DOSSIER
@@ -31,14 +43,23 @@ def tab_prediction():
             with gr.Row():
                 img_output = gr.Gallery(label="Transformed Images", columns=4)
 
+    def update_range_visibility(use_range):
+        return gr.update(visible=use_range), gr.update(visible=use_range)
+
+    use_range_checkbox.change(
+        update_range_visibility,
+        inputs=[use_range_checkbox],
+        outputs=[range_test_input, seed_input]
+    )
+
     prediction_button.click(
         run_prediction,
-        inputs=[source_input, agent_input],
+        inputs=[source_input, agent_input, range_test_input, seed_input, use_range_checkbox, range_test_input, seed_input],
         outputs=[prediction_accuracy_status, img_output]
     )
 
 
-def run_prediction(source_img, agent_folder):
+def run_prediction(source_img, agent_folder, range_test, seed, use_range, range_value, seed_value):
 
     # ---------------------------
     #   SOURCE IMAGE
@@ -74,6 +95,14 @@ def run_prediction(source_img, agent_folder):
     else:
         # Single path (file or folder)
         images, type_of_load = load_images(source_img)
+
+    if use_range:
+        import numpy as np
+        from srcs.tools import range_processing
+
+        np.random.seed(seed)
+        images = range_processing(images, range_nb=range_value)
+        np.random.seed(None)
 
     print(f"Loaded images using method: {type_of_load}")
     print(f"Number of images loaded: {sum(len(imgs) for imgs in images.values())}")
