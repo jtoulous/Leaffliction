@@ -551,12 +551,12 @@ def ArgumentParsing():
         '--destination',
         type=str,
         default='data/leaves_preprocessed',
-        help='Folder to save augmented images \
+        help='Folder to save transformed images \
               (default: data/leaves_preprocessed)')
     parser.add_argument(
         '--display',
         action='store_true',
-        help='Display augmented images during processing (default: False)')
+        help='Display transformed images during processing (default: False)')
     parser.add_argument(
         '--range-nb',
         type=int,
