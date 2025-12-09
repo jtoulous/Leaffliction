@@ -194,6 +194,30 @@ class DetectionAgent:
 
         return agent
 
+    @staticmethod
+    def load_from_files(model_weights_file_path, agent_file_path, model_arch_file_path):
+        # Charger l'agent (sans modèle)
+        with open(agent_file_path, 'rb') as f:
+            agent = pickle.load(f)
+
+#        # Charger le modèle keras
+#        agent.model = load_model(model_file_path)
+
+        from tensorflow.keras.models import model_from_json  # type: ignore # noqa: E402
+        with open(model_arch_file_path, 'r') as f:
+            model_arch = f.read()
+
+        agent.model = model_from_json(model_arch)
+        agent.model.load_weights(model_weights_file_path)
+
+        agent.model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=['accuracy']
+        )
+
+        return agent
+
     def split_indices(self, n_samples):
         # Votre code reste inchangé
         train_size = int(n_samples * self.train_size)
