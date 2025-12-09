@@ -190,6 +190,62 @@ def load_images(load_folder, progress=None, task=None):
     return images_dict, "Root"
 
 
+def load_images_from_list(load_files_list, original=False, progress=None, task=None):
+    """
+    Load all images from the specified folder structure.
+
+    Args:
+        load_folder (str): Path to the folder or image file.
+        progress (Progress, optional): Progress tracking object.
+        task (Task, optional): Task identifier for progress tracking.
+
+    Returns:
+        dict: A nested dictionary with structure {class_name: {image_file: {enhancement_type: image_data}}}
+    """
+    images_dict = {}
+    count = 0
+    unit_test = False
+
+    for load_folder in load_files_list:
+        if os.path.isfile(load_folder):
+            parent_dir = os.path.dirname(load_folder)
+            class_name = os.path.basename(parent_dir)
+            image_file = os.path.basename(load_folder)
+            if class_name.startswith('Unit_test'):
+                class_name = image_file.rstrip('.JPG').rstrip('1').rstrip('2')
+                unit_test = True
+                image_file = image_file + str(count)
+                count += 1
+            image_basename = os.path.splitext(image_file)[0]
+
+            if task is not None:
+                progress.update(task, total=1)
+
+            if images_dict.get(class_name) is None:
+                images_dict[class_name] = {}
+
+            if len(image_basename.split('_')) == 1:
+                images_dict[class_name][image_basename] = {}
+                images_dict[class_name][image_basename]['original'] = cv2.imread(load_folder)
+            else:
+                if unit_test is False:
+                    if original:
+                        continue
+                    base_name, enhancement = image_basename.split('_', 1)
+                else:
+                    base_name = image_basename
+                    enhancement = 'original'
+                unit_test = False
+                if images_dict[class_name].get(base_name) is None:
+                    images_dict[class_name][base_name] = {}
+                images_dict[class_name][base_name][enhancement] = cv2.imread(load_folder)
+
+            if task is not None:
+                progress.update(task, advance=1)
+
+    return images_dict
+
+
 def save_images(images, save_folder, progress=None, task=None):
     """
     Save images to the specified folder structure.
