@@ -1,8 +1,12 @@
 import gradio as gr
 import os
 import numpy as np
-from srcs.tools import load_original_images
+from srcs.tools import load_original_images, load_images
 from srcs.DetectionAgent import DetectionAgent
+
+#from tools import load_original_images, load_images
+#from DetectionAgent import DetectionAgent
+#import sys
 
 
 def tab_training():
@@ -82,7 +86,9 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
         else:
             source_path = imgs_folder[0]
 
-        original_images, type_of_load = load_original_images(source_path)
+        #original_images, type_of_load = load_original_images(source_path)
+        original_images, type_of_load = load_images(source_path)
+
         for img_class, imgs_list in original_images.items():
             for img_name, img_types in imgs_list.items():
                 for img_type, img in img_types.items():
@@ -100,3 +106,21 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
 
     except Exception as e:
         return f'Error during training: {str(e)}'
+
+
+#X = []
+#y = []
+#
+#original_images, type_of_load = load_images(sys.argv[1])
+#breakpoint()
+#
+#for img_class, imgs_list in original_images.items():
+#    for img_name, img_types in imgs_list.items():
+#        for img_type, img in img_types.items():
+#            X.append(img)
+#            y.append(img_class)
+#
+#breakpoint()
+#
+#X = np.array(X)
+#y = np.array(y)

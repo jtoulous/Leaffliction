@@ -30,7 +30,8 @@ if __name__ == '__main__':
 
         total = 0
 
-        original_images, type_of_load = load_original_images(args.source)
+#        original_images, type_of_load = load_original_images(args.source)
+        original_images, type_of_load = load_images(args.source)
         for img_class, imgs_list in original_images.items():
             for img_name, img_types in imgs_list.items():
                 for img_type, img in img_types.items():
