@@ -9,7 +9,7 @@ from srcs.tools import save_images, load_images
 
 
 class ImgTransformator:
-    def __init__(self, images_structure=None):
+    def __init__(self, images_structure=None, super_background=True):
         """
         Initialize the ImgTransformator with a given structure of images.
 
@@ -17,6 +17,7 @@ class ImgTransformator:
             images_structure (dict): A dictionary containing images categorized by class names.
         """
         self.images_structure = images_structure
+        self.super_background = super_background
 
         self.function_map = {
             'gaussian_blur': self.gaussian_blur,
@@ -41,22 +42,14 @@ class ImgTransformator:
         Returns:
             dict: A dictionary containing transformed images.
         """
-        function_map = {
-            'gaussian_blur': self.gaussian_blur,
-            'mask': self.mask,
-            'roi_objects': self.roi_objects,
-            'pseudolandmarks': self.pseudolandmarks,
-            'spots_isolation': self.spots_isolation,
-            'background_removal': self.background_removal,
-        }
 
         if image is not None:
             transformed_images = {}
             transformed_images['original'] = image
-            if transform in function_map:
-                transformed_images[transform] = function_map[transform](image)
+            if transform in self.function_map:
+                transformed_images[transform] = self.function_map[transform](image)
             else:
-                for trans_name, trans_function in function_map.items():
+                for trans_name, trans_function in self.function_map.items():
                     transformed_images[trans_name] = trans_function(image)
 
             if display:
@@ -73,7 +66,7 @@ class ImgTransformator:
             elif transform is not None:
                 num_transformations = 1
             else:
-                num_transformations = len(function_map)
+                num_transformations = len(self.function_map)
 
             total_operations = sum(len(imgs) for imgs in self.images_structure.values()) * (num_transformations + 1)
 
@@ -93,20 +86,20 @@ class ImgTransformator:
                         progress.update(task, advance=1)
 
                     if transform is None and transform_list is None:
-                        for trans_name, trans_function in function_map.items():
+                        for trans_name, trans_function in self.function_map.items():
                             self.images_structure[category][img_key][trans_name] = trans_function(image)
                             if task is not None:
                                 progress.update(task, advance=1)
 
                     elif transform_list is not None:
                         for transform in transform_list:
-                            if transform in function_map:
-                                self.images_structure[category][img_key][transform] = function_map[transform](image)
+                            if transform in self.function_map:
+                                self.images_structure[category][img_key][transform] = self.function_map[transform](image)
                                 if task is not None:
                                     progress.update(task, advance=1)
 
                     else:
-                        self.images_structure[category][img_key][transform] = function_map[transform](image)
+                        self.images_structure[category][img_key][transform] = self.function_map[transform](image)
                         if task is not None:
                             progress.update(task, advance=1)
 
@@ -499,7 +492,7 @@ class ImgTransformator:
         leaf_mask = cv2.morphologyEx(leaf_mask, cv2.MORPH_ERODE, kernel, iterations=1)
 
         # Grabcut refinement
-        if np.any(leaf_mask):
+        if np.any(leaf_mask) and self.super_background:
             try:
                 # Initialize GrabCut mask
                 gc_mask = np.zeros(image.shape[:2], np.uint8)
