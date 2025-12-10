@@ -69,13 +69,14 @@ The system achieves **>90% accuracy** on validation sets with a minimum of 100 i
 ### 6. **Interactive Web Interface**
 - Built with Gradio
 - Tabbed interface for each module:
-  - Home
+  - Home (with interactive terminal)
   - Distribution
   - Augmentation
   - Transformation
   - Training
   - Prediction
 - Real-time visualization
+- Interactive command execution
 - Dark theme with custom Plotly styling
 
 ## 📁 Project Structure
@@ -90,9 +91,11 @@ Leaffliction/
 ├── predict.py                  # Prediction script
 ├── Makefile                    # Build automation
 ├── requirements.txt            # Python dependencies
-├── signature.txt               # Dataset SHA1 hash
+├── signature.txt               # zip_eval.zip SHA1 hash
+├── .gitignore                  # Git ignore rules
 ├── data/
-│   ├── leaves/                 # Original dataset
+│   ├── leaves.zip              # Original dataset (zipped)
+│   ├── leaves/                 # Extracted dataset (after unzip)
 │   │   ├── Apple_Black_rot/
 │   │   ├── Apple_healthy/
 │   │   ├── Apple_rust/
@@ -101,12 +104,21 @@ Leaffliction/
 │   │   ├── Grape_Esca/
 │   │   ├── Grape_healthy/
 │   │   └── Grape_spot/
-│   └── leaves_preprocessed/    # Processed images
+│   └── leaves_preprocessed/    # Processed images (generated)
+├── zip_eval/
+│   └── SuperAgent/             # Pre-trained model
+│       ├── agent.pkl
+│       ├── model_architecture.json
+│       └── model.weights.h5
+├── zip_eval.zip                # Evaluation package
 └── srcs/
     ├── DetectionAgent.py       # ML model wrapper
     ├── tab_augmentation.py     # Gradio augmentation tab
     ├── tab_distribution.py     # Gradio distribution tab
     ├── tab_transformation.py   # Gradio transformation tab
+    ├── tab_training.py         # Gradio training tab
+    ├── tab_prediction.py       # Gradio prediction tab
+    ├── tab_terminal.py         # Gradio terminal tab
     └── tools.py                # Utility functions
 ```
 
@@ -134,7 +146,7 @@ This will:
 - Create a virtual environment in `~/goinfre/venv`
 - Install all dependencies from `requirements.txt`
 - Unzip the dataset
-- Display activation instructions
+- Launch the Gradio web interface
 
 3. **Manual setup**
 ```bash
@@ -169,11 +181,12 @@ python app.py
 Then open your browser to `http://localhost:7860` (or the URL shown in terminal).
 
 #### Available Tabs:
+- **Home**: Interactive terminal interface and README documentation
 - **Distribution**: Analyze dataset distribution with interactive charts
 - **Augmentation**: Apply and visualize data augmentation techniques
 - **Transformation**: Apply image transformations for preprocessing
-- **Training**: Train classification models (coming soon)
-- **Prediction**: Predict diseases on new images (coming soon)
+- **Training**: Train classification models with real-time progress tracking
+- **Prediction**: Predict diseases on new images with pre-trained models
 
 ### Command Line Tools
 
@@ -268,7 +281,9 @@ Output includes:
 
 ## 📊 Dataset
 
-The dataset is organized by plant type and disease category:
+The dataset is provided as `data/leaves.zip` and must be extracted before use (automatically handled by `make all`).
+
+Once extracted, it's organized by plant type and disease category:
 
 ```
 data/leaves/
@@ -284,17 +299,17 @@ data/leaves/
 
 ### Dataset Verification
 
-The project includes a `signature.txt` file containing the SHA1 hash of the dataset for integrity verification:
+The project includes a `signature.txt` file containing the SHA1 hash of the evaluation package for integrity verification:
 
 ```bash
 # Linux
-sha1sum data/leaves.zip
+sha1sum zip_eval.zip
 
 # macOS
-shasum data/leaves.zip
+shasum zip_eval.zip
 
 # Windows
-certUtil -hashfile data/leaves.zip sha1
+certUtil -hashfile zip_eval.zip sha1
 ```
 
 ## 🎯 Model Performance
