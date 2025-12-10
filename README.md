@@ -15,6 +15,7 @@ A computer vision project for **image classification by disease recognition on l
 - [Model Performance](#model-performance)
 - [Technical Details](#technical-details)
 - [Requirements](#requirements)
+- [Dataset & Model](#dataset--model)
 
 ## 🎯 Overview
 
@@ -312,7 +313,7 @@ shasum zip_eval.zip
 certUtil -hashfile zip_eval.zip sha1
 ```
 
-## 🎯 Model Performance
+## 📈 Model Performance
 
 The trained model achieves:
 - **Accuracy**: >90% on validation set
@@ -365,6 +366,10 @@ seaborn>=0.13.2
 rich>=14.2.0
 numpy>=2.2.6
 ```
+
+## 📦 Dataset & Model
+
+Dataset and model used for the evaluation are available [here](https://gofile.io/d/9LrCUP)
 
 ## 🧹 Maintenance
 
