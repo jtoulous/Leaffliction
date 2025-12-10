@@ -2,7 +2,13 @@ import cv2
 import numpy as np
 import argparse as ap
 
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    BarColumn,
+    TextColumn,
+    TimeElapsedColumn
+)
 
 from srcs.tools import load_original_images, save_images, range_processing
 
@@ -13,10 +19,13 @@ class ImgAugmentator:
         Initialize the ImgAugmentation with a given structure of images.
 
         Args:
-            images_structure (dict): A dictionary containing images categorized by class names.
+            images_structure (dict): A dictionary containing images
+                categorized by class names.
         """
         self.images_structure = images_structure
-        self.max_disease_count = max(len(imgs) for imgs in images_structure.values())
+        self.max_disease_count = max(
+            len(imgs) for imgs in images_structure.values()
+        )
         self.original_structure = True
 
         return
@@ -26,18 +35,27 @@ class ImgAugmentator:
         Update the images structure with oversampling.
 
         Args:
-            progress (Progress, optional): Rich Progress object for tracking progress.
+            progress (Progress, optional): Rich Progress object for
+                tracking progress.
             task (Task, optional): Rich Task object for updating progress.
-            display (bool, optional): Whether to display images during augmentation.
-            augmentation (str, optional): Specific augmentation to apply. If None, applies all augmentations.
+            display (bool, optional): Whether to display images during
+                augmentation.
+            augmentation (str, optional): Specific augmentation to apply.
+                If None, applies all augmentations.
 
         Returns:
             dict: The updated images structure with oversampling.
         """
-        augmentation_types = ['rotation', 'blur', 'contrast', 'scaling', 'illumination', 'projective']
+        augmentation_types = [
+            'rotation', 'blur', 'contrast', 'scaling',
+            'illumination', 'projective'
+        ]
 
         if task is not None:
-            total_operations = sum(len(self.images_structure[category]) for category in self.images_structure)
+            total_operations = sum(
+                len(self.images_structure[category])
+                for category in self.images_structure
+            )
             progress.update(task, total=total_operations)
 
         final_struct = {}
@@ -46,7 +64,8 @@ class ImgAugmentator:
             final_struct[category] = {}
             current_count = len(self.images_structure[category])
 
-            # Calculate how many transformations needed per image to reach max_disease_count
+            # Calculate how many transformations needed per image
+            # to reach max_disease_count
             total_needed = self.max_disease_count
             transformations_per_image = (total_needed // current_count) + 1
 
@@ -54,20 +73,28 @@ class ImgAugmentator:
                 final_struct[category][img_key] = {}
 
                 # Always add original
-                final_struct[category][img_key]['original'] = self.images_structure[category][img_key]['original']
+                final_struct[category][img_key]['original'] = (
+                    self.images_structure[category][img_key]['original']
+                )
 
                 # Add unique augmentations (one of each type maximum)
                 available_augmentations = augmentation_types.copy()
                 np.random.shuffle(available_augmentations)
 
-                for aug_type in available_augmentations[:transformations_per_image - 1]:  # -1 because we already have 'original'
+                # -1 because we already have 'original'
+                for aug_type in available_augmentations[
+                    :transformations_per_image - 1
+                ]:
                     final_struct[category][img_key][aug_type] = 'TODO'
 
                 if task is not None:
                     progress.update(task, advance=1)
 
             # Trim excess if we overshot the target
-            total_transformations = sum(len(transforms) for transforms in final_struct[category].values())
+            total_transformations = sum(
+                len(transforms)
+                for transforms in final_struct[category].values()
+            )
             if total_transformations > total_needed:
                 # Remove excess transformations from the last images
                 excess = total_transformations - total_needed
@@ -86,16 +113,21 @@ class ImgAugmentator:
 
         return self.images_structure
 
-    def augment(self, image=None, progress=None, task=None, display=False, augmentation=None):
+    def augment(self, image=None, progress=None, task=None,
+                display=False, augmentation=None):
         """
         Apply augmentations to images.
 
         Args:
-            image (np.ndarray, optional): A single image to augment. If None, augments all images in the structure.
-            progress (Progress, optional): Rich Progress object for tracking progress.
+            image (np.ndarray, optional): A single image to augment.
+                If None, augments all images in the structure.
+            progress (Progress, optional): Rich Progress object for
+                tracking progress.
             task (Task, optional): Rich Task object for updating progress.
-            display (bool, optional): Whether to display images during augmentation.
-            augmentation (str, optional): Specific augmentation to apply. If None, applies all augmentations.
+            display (bool, optional): Whether to display images during
+                augmentation.
+            augmentation (str, optional): Specific augmentation to apply.
+                If None, applies all augmentations.
 
         Returns:
             dict: A dictionary containing augmented images.
@@ -113,7 +145,9 @@ class ImgAugmentator:
             augmented_images = {}
             augmented_images['original'] = image
             if augmentation in function_map:
-                augmented_images[augmentation] = function_map[augmentation](image)
+                augmented_images[augmentation] = (
+                    function_map[augmentation](image)
+                )
             else:
                 for aug_name, aug_function in function_map.items():
                     augmented_images[aug_name] = aug_function(image)
@@ -128,9 +162,16 @@ class ImgAugmentator:
         else:
             if task is not None:
                 if self.original_structure:
-                    total = sum(len(imgs) for imgs in self.images_structure.values())
+                    total = sum(
+                        len(imgs)
+                        for imgs in self.images_structure.values()
+                    )
                 else:
-                    total = sum(len(imgs) for imgs in self.images_structure.values() for imgs in imgs.values())
+                    total = sum(
+                        len(imgs)
+                        for imgs in self.images_structure.values()
+                        for imgs in imgs.values()
+                    )
                 progress.update(task, total=total)
 
             for category in self.images_structure:
@@ -138,35 +179,64 @@ class ImgAugmentator:
                     augmented_images = {}
 
                     if self.original_structure:
-                        image = self.images_structure[category][img_key]['original']
+                        image = (
+                            self.images_structure[category][img_key][
+                                'original'
+                            ]
+                        )
                         augmented_images = {
                             'original': image,
                             **(
-                                {aug_name: aug_function(image) for aug_name, aug_function in function_map.items()}
+                                {
+                                    aug_name: aug_function(image)
+                                    for aug_name, aug_function
+                                    in function_map.items()
+                                }
                                 if augmentation is None else
-                                {augmentation: function_map[augmentation](image)}
+                                {
+                                    augmentation:
+                                    function_map[augmentation](image)
+                                }
                             )
                         }
                         if task is not None:
                             progress.update(task, advance=1)
                     else:
-                        for aug_type in self.images_structure[category][img_key]:
+                        for aug_type in (
+                            self.images_structure[category][img_key]
+                        ):
                             if aug_type == 'original':
-                                augmented_images['original'] = self.images_structure[category][img_key]['original']
+                                augmented_images['original'] = (
+                                    self.images_structure[category]
+                                    [img_key]['original']
+                                )
                             else:
-                                if augmentation is None or aug_type == augmentation:
-                                    aug_function = function_map.get(aug_type, None)
+                                if (augmentation is None or
+                                        aug_type == augmentation):
+                                    aug_function = (
+                                        function_map.get(aug_type, None)
+                                    )
                                     if aug_function:
-                                        augmented_images[aug_type] = aug_function(self.images_structure[category][img_key]['original'])
+                                        augmented_images[aug_type] = (
+                                            aug_function(
+                                                self.images_structure
+                                                [category][img_key]['original']
+                                            )
+                                        )
                             if task is not None:
                                 progress.update(task, advance=1)
 
                     self.images_structure[category][img_key] = augmented_images
 
                     if display:
-                        augmented_images = self.images_structure[category][img_key]
+                        augmented_images = (
+                            self.images_structure[category][img_key]
+                        )
                         for aug_type, aug_image in augmented_images.items():
-                            cv2.imshow(f"{category} - {img_key} - {aug_type}", aug_image)
+                            cv2.imshow(
+                                f"{category} - {img_key} - {aug_type}",
+                                aug_image
+                            )
                         cv2.waitKey(0)
                         cv2.destroyAllWindows()
 
@@ -178,16 +248,19 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to be rotated.
-            angle (float, optional): The rotation angle in degrees. Defaults to a random angle between 20 and 340.
+            angle (float, optional): The rotation angle in degrees.
+                Defaults to a random angle between 20 and 340.
 
         Returns:
             np.ndarray: The rotated image.
 
         Behavior:
-            - Computes new image bounds to ensure the entire rotated image fits.
+            - Computes new image bounds to ensure the entire rotated
+              image fits.
             - Creates a rotation matrix centered on the image.
             - Adjusts translation to center the rotated image.
-            - Applies the rotation using cv2.warpAffine with a white border.
+            - Applies the rotation using cv2.warpAffine with a white
+              border.
             - Returns the rotated image.
         """
         if image is None:
@@ -233,7 +306,8 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to be blurred.
-            blur_factor (int, optional): The size of the Gaussian kernel. Defaults to 15.
+            blur_factor (int, optional): The size of the Gaussian kernel.
+                Defaults to 15.
 
         Returns:
             np.ndarray: The blurred image.
@@ -259,7 +333,9 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to adjust contrast.
-            contrast (float, optional): Contrast factor. Values >1 increase contrast, <1 decrease contrast. Defaults to 1.4.
+            contrast (float, optional): Contrast factor. Values >1
+                increase contrast, <1 decrease contrast.
+                Defaults to 1.4.
 
         Returns:
             np.ndarray: The contrast-adjusted image.
@@ -280,14 +356,16 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to be scaled.
-            scale_factor (float, optional): Scaling factor. Values >1 zoom in, <1 zoom out. Defaults to 1.2.
+            scale_factor (float, optional): Scaling factor. Values >1
+                zoom in, <1 zoom out. Defaults to 1.2.
 
         Returns:
             np.ndarray: The scaled image.
 
         Behavior:
             - Creates a scaling transformation matrix.
-            - Applies the transformation using cv2.warpAffine with a white border.
+            - Applies the transformation using cv2.warpAffine with a
+              white border.
             - Returns the scaled image.
         """
         if image is None:
@@ -327,7 +405,8 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to adjust illumination.
-            brightness (int, optional): Brightness offset to add to pixel values. Defaults to 60.
+            brightness (int, optional): Brightness offset to add to pixel
+                values. Defaults to 60.
 
         Returns:
             np.ndarray: The illumination-adjusted image.
@@ -348,16 +427,19 @@ class ImgAugmentator:
 
         Args:
             image (np.ndarray): The input image to be transformed.
-            intensity (float, optional): Intensity of the perspective distortion (0.0 = none, 0.5 = strong). Defaults to 0.2.
+            intensity (float, optional): Intensity of the perspective
+                distortion (0.0 = none, 0.5 = strong). Defaults to 0.2.
 
         Returns:
             np.ndarray: The projectively transformed image.
 
         Behavior:
             - Defines source points (corners of the original image).
-            - Applies random perspective distortion to destination points based on intensity.
+            - Applies random perspective distortion to destination
+              points based on intensity.
             - Computes the perspective transformation matrix.
-            - Applies the perspective transformation using cv2.warpPerspective with a white border.
+            - Applies the perspective transformation using
+              cv2.warpPerspective with a white border.
             - Returns the projectively transformed image.
         """
         if image is None:
@@ -451,7 +533,10 @@ def ArgumentParsing():
     parser.add_argument(
         '--augmentation',
         type=str,
-        choices=['rotation', 'blur', 'contrast', 'scaling', 'illumination', 'projective'],
+        choices=[
+            'rotation', 'blur', 'contrast', 'scaling',
+            'illumination', 'projective'
+        ],
         default=None,
         help='Augmentation to apply to images (default: None)')
 
@@ -475,30 +560,51 @@ if __name__ == '__main__':
 
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
-            images, type_of_load = load_original_images(args.source, progress=progress, task=images_load_task)
-            images = range_processing(images, range_nb=args.range_nb, range_percent=args.range_percent)
+            images, type_of_load = load_original_images(
+                args.source, progress=progress, task=images_load_task
+            )
+            images = range_processing(
+                images, range_nb=args.range_nb,
+                range_percent=args.range_percent
+            )
             progress.update(global_task, advance=1)
 
             # Augment images
-            images_augment_task = progress.add_task("↪ Images augmentation", total=2)
+            images_augment_task = progress.add_task(
+                "↪ Images augmentation", total=2
+            )
             augmentator = ImgAugmentator(images)
 
             if type_of_load == "File":
                 progress.update(images_augment_task, total=1)
             else:
-                oversample_struct_task = progress.add_task("  ↪ Oversampling struct", total=0)
-                augmentator.update_image_struct(progress=progress, task=oversample_struct_task)
+                oversample_struct_task = progress.add_task(
+                    "  ↪ Oversampling struct", total=0
+                )
+                augmentator.update_image_struct(
+                    progress=progress, task=oversample_struct_task
+                )
                 progress.update(images_augment_task, advance=1)
 
-            augmenting_images_task = progress.add_task("  ↪ Augmenting images", total=0)
-            augmented_images = augmentator.augment(progress=progress, task=augmenting_images_task, display=args.display, augmentation=args.augmentation)
+            augmenting_images_task = progress.add_task(
+                "  ↪ Augmenting images", total=0
+            )
+            augmented_images = augmentator.augment(
+                progress=progress, task=augmenting_images_task,
+                display=args.display, augmentation=args.augmentation
+            )
             progress.update(images_augment_task, advance=1)
             progress.update(global_task, advance=1)
 
             # Save augmented images
             if args.destination not in [None, '', 'None']:
-                images_save_task = progress.add_task("↪ Save augmented images", total=0)
-                save_images(augmented_images, args.destination, progress=progress, task=images_save_task)
+                images_save_task = progress.add_task(
+                    "↪ Save augmented images", total=0
+                )
+                save_images(
+                    augmented_images, args.destination,
+                    progress=progress, task=images_save_task
+                )
             progress.update(global_task, advance=1)
 
     except Exception as error:

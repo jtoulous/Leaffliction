@@ -63,7 +63,10 @@ class TerminalSession:
             if result.stderr:
                 output += result.stderr
 
-            return output.strip() if output.strip() else "(Command executed successfully)"
+            return (
+                output.strip() if output.strip()
+                else "(Command executed successfully)"
+            )
 
         except subprocess.TimeoutExpired:
             return "Error: Command timed out (30s limit)"
@@ -125,7 +128,10 @@ def tab_terminal():
                 max_lines=30,
                 interactive=False,
                 show_label=False,
-                placeholder="Terminal output will appear here...\nType a command below and press Enter or click Run.",
+                placeholder=(
+                    "Terminal output will appear here...\n"
+                    "Type a command below and press Enter or click Run."
+                ),
                 elem_id="terminal-output",
                 container=False
             )

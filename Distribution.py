@@ -3,7 +3,13 @@ import argparse as ap
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    BarColumn,
+    TextColumn,
+    TimeElapsedColumn
+)
 
 from srcs.tools import load_original_images, load_images
 
@@ -14,7 +20,8 @@ class Distribution:
         Initialize the Distribution with a given structure of images.
 
         Args:
-            images_structure (dict): A dictionary containing images categorized by class names.
+            images_structure (dict): A dictionary containing images
+                categorized by class names.
         """
         self.images_structure = images_structure
 
@@ -23,12 +30,16 @@ class Distribution:
         Calculate the distribution of images across different classes.
 
         Args:
-            progress (Progress, optional): Rich Progress object for displaying progress.
-            task (Task, optional): Specific task in the progress to update.
-            graph_type (str, optional): Type of graph to display ('pie', 'bar').
+            progress (Progress, optional): Rich Progress object for
+                displaying progress.
+            task (Task, optional): Specific task in the progress to
+                update.
+            graph_type (str, optional): Type of graph to display
+                ('pie', 'bar').
 
         Returns:
-            dict: A dictionary where keys are class names and values are the count of images in each class.
+            dict: A dictionary where keys are class names and values
+                are the count of images in each class.
         """
         self._pie_chart() if graph_type in ['pie', None] else None
         if task is not None:
@@ -40,27 +51,36 @@ class Distribution:
 
     def _pie_chart(self):
         """
-        Generate a pie chart representing the distribution of images across classes.
+        Generate a pie chart representing the distribution of images
+        across classes.
         """
         data = []
         labels = []
         chart = {}
 
         for category, images in self.images_structure.items():
-            chart[category] = sum(len(variations) for variations in images.values())
+            chart[category] = sum(
+                len(variations) for variations in images.values()
+            )
 
-        chart = dict(sorted(chart.items(), key=lambda item: item[1], reverse=False))
+        chart = dict(sorted(
+            chart.items(), key=lambda item: item[1], reverse=False
+        ))
         data = list(chart.values())
         labels = list(chart.keys())
 
         colors = sns.color_palette('light:r_r', len(labels))
 
         fig, ax = plt.subplots()
-        wedges, texts, autotexts = ax.pie(data, labels=labels, colors=colors, autopct='%.0f%%')
+        wedges, texts, autotexts = ax.pie(
+            data, labels=labels, colors=colors, autopct='%.0f%%'
+        )
 
-        annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                            arrowprops=dict(arrowstyle="->"))
+        annot = ax.annotate(
+            "", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+            arrowprops=dict(arrowstyle="->")
+        )
         annot.set_visible(False)
 
         def on_hover(event):
@@ -83,14 +103,17 @@ class Distribution:
 
     def _bar_plot(self):
         """
-        Generate a bar plot representing the distribution of images across classes.
+        Generate a bar plot representing the distribution of images
+        across classes.
         """
         data = []
         labels = []
         chart = {}
 
         for category, images in self.images_structure.items():
-            chart[category] = sum(len(variations) for variations in images.values())
+            chart[category] = sum(
+                len(variations) for variations in images.values()
+            )
 
         chart = dict(sorted(chart.items(), key=lambda item: item[0]))
         data = list(chart.values())
@@ -98,7 +121,10 @@ class Distribution:
 
         sorted_indices = np.argsort(data)
         colors = sns.color_palette('light:r_r', len(labels))
-        color_map = [colors[np.where(sorted_indices == i)[0][0]] for i in range(len(data))]
+        color_map = [
+            colors[np.where(sorted_indices == i)[0][0]]
+            for i in range(len(data))
+        ]
 
         fig, ax = plt.subplots()
         bars = ax.bar(labels, data, color=color_map)
@@ -108,9 +134,12 @@ class Distribution:
 
         plt.xticks(rotation=45)
 
-        annot = ax.annotate("", xy=(0, 0), xytext=(-30, -40), textcoords="offset points",
-                            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
-                            arrowprops=dict(arrowstyle="->"))
+        annot = ax.annotate(
+            "", xy=(0, 0), xytext=(-30, -40),
+            textcoords="offset points",
+            bbox=dict(boxstyle="round", fc="w", alpha=0.9),
+            arrowprops=dict(arrowstyle="->")
+        )
         annot.set_visible(False)
 
         def on_hover(event):
@@ -152,7 +181,8 @@ def ArgumentParsing():
     parser.add_argument(
         '--all-images',
         action='store_true',
-        help='Display distribution for all images (not only original) (default: False)')
+        help='Display distribution for all images (not only original) '
+             '(default: False)')
 
     return parser.parse_args()
 
@@ -174,15 +204,24 @@ if __name__ == '__main__':
             # Load images
             images_load_task = progress.add_task("↪ Load images", total=0)
             if args.all_images:
-                images, _ = load_images(args.source, progress=progress, task=images_load_task)
+                images, _ = load_images(
+                    args.source, progress=progress, task=images_load_task
+                )
             else:
-                images, _ = load_original_images(args.source, progress=progress, task=images_load_task)
+                images, _ = load_original_images(
+                    args.source, progress=progress, task=images_load_task
+                )
             progress.update(global_task, advance=1)
 
             # Augment images
-            display_task = progress.add_task("↪ Display distribution", total=2)
+            display_task = progress.add_task(
+                "↪ Display distribution", total=2
+            )
             Distributor = Distribution(images, all_images=args.all_images)
-            Distributor.distribution(progress=progress, task=display_task, graph_type=args.distribution)
+            Distributor.distribution(
+                progress=progress, task=display_task,
+                graph_type=args.distribution
+            )
             progress.update(global_task, advance=1)
 
     except Exception as error:

@@ -16,11 +16,17 @@ gradio_template = go.layout.Template(
         paper_bgcolor='#27272a',
         plot_bgcolor='#27272a',
         font=dict(
-            family='system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            family=(
+                'system-ui, -apple-system, BlinkMacSystemFont, '
+                '"Segoe UI", Roboto, sans-serif'
+            ),
             size=12,
             color='#ffffff'
         ),
-        colorway=['#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66', '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'],
+        colorway=[
+            '#ff7c00', '#ff8c1a', '#ff9c33', '#ffac4d', '#ffbc66',
+            '#ffcc80', '#ffdc99', '#ffecb3', '#fffbf0'
+        ],
         title=dict(
             font=dict(size=16, color='#ffffff'),
             x=0.5,
@@ -67,8 +73,12 @@ def tab_training():
             # Training Parameters
             with gr.Column():
                 gr.Markdown("### Training Parameters")
-                epochs_input = gr.Number(label="Epochs", value=10, precision=0)
-                batch_size_input = gr.Number(label="Batch Size", value=32, precision=0)
+                epochs_input = gr.Number(
+                    label="Epochs", value=10, precision=0
+                )
+                batch_size_input = gr.Number(
+                    label="Batch Size", value=32, precision=0
+                )
                 range_test_input = gr.Slider(
                     minimum=0,
                     maximum=500,
@@ -77,7 +87,9 @@ def tab_training():
                     value=100,
                     interactive=True
                 )
-                seed_input = gr.Number(label="Seed for splitting data", value=42, precision=0)
+                seed_input = gr.Number(
+                    label="Seed for splitting data", value=42, precision=0
+                )
 
             # Save Parameters
             with gr.Column():
@@ -87,12 +99,20 @@ def tab_training():
                     value="/",
                     placeholder="Ex: models/agent1"
                 )
-                save_name_input = gr.Textbox(label="Agent Name", value="DetectionAgent_1")
+                save_name_input = gr.Textbox(
+                    label="Agent Name", value="DetectionAgent_1"
+                )
 
-            train_button = gr.Button("Run Training", variant="primary")
+            train_button = gr.Button(
+                "Run Training", variant="primary"
+            )
 
         with gr.Column():
-            training_status = gr.Textbox(label="Status", value="Waiting for training...", interactive=False)
+            training_status = gr.Textbox(
+                label="Status",
+                value="Waiting for training...",
+                interactive=False
+            )
             with gr.Row():
                 training_results = gr.Plot(label="Results")
 
@@ -112,7 +132,10 @@ def tab_training():
     )
 
 
-def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, batch_size, range_test, seed):
+def RunTraining(
+    imgs_folder, transformations, save_folder, save_name,
+    epochs, batch_size, range_test, seed
+):
     try:
         from srcs.tools import range_processing
 
@@ -125,7 +148,11 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
 
         images = load_images_from_list(imgs_folder, original=False)
         total_images = sum(len(imgs) for imgs in images.values())
-        range_total = total_images - range_test if range_test < total_images else total_images
+        range_total = (
+            total_images - range_test
+            if range_test < total_images
+            else total_images
+        )
         images = range_processing(images, range_nb=range_total)
 
         np.random.seed(None)
@@ -139,34 +166,55 @@ def RunTraining(imgs_folder, transformations, save_folder, save_name, epochs, ba
         X = np.array(X)
         y = np.array(y)
 
-        agent = DetectionAgent(epochs=epochs, batch_size=batch_size, transfo=transformations)
+        agent = DetectionAgent(
+            epochs=epochs, batch_size=batch_size, transfo=transformations
+        )
         history, test_accuracy, test_loss = agent.train(X, y)
         agent.save(save_path)
 
         # Generate plots
         epochs_range = list(range(1, len(history.history['accuracy']) + 1))
 
-        fig = make_subplots(rows=1, cols=2, subplot_titles=("Model Accuracy", "Model Loss"))
+        fig = make_subplots(
+            rows=1, cols=2,
+            subplot_titles=("Model Accuracy", "Model Loss")
+        )
 
         # Accuracy
         fig.add_trace(
-            go.Scatter(x=epochs_range, y=history.history['accuracy'], mode='lines+markers', name='Train Accuracy', line=dict(color='#ff7c00')),
+            go.Scatter(
+                x=epochs_range, y=history.history['accuracy'],
+                mode='lines+markers', name='Train Accuracy',
+                line=dict(color='#ff7c00')
+            ),
             row=1, col=1
         )
         if 'val_accuracy' in history.history:
             fig.add_trace(
-                go.Scatter(x=epochs_range, y=history.history['val_accuracy'], mode='lines+markers', name='Validation Accuracy', line=dict(color='#ff9c33')),
+                go.Scatter(
+                    x=epochs_range, y=history.history['val_accuracy'],
+                    mode='lines+markers', name='Validation Accuracy',
+                    line=dict(color='#ff9c33')
+                ),
                 row=1, col=1
             )
 
         # Loss
         fig.add_trace(
-            go.Scatter(x=epochs_range, y=history.history['loss'], mode='lines+markers', name='Train Loss', line=dict(color='#ffac4d')),
+            go.Scatter(
+                x=epochs_range, y=history.history['loss'],
+                mode='lines+markers', name='Train Loss',
+                line=dict(color='#ffac4d')
+            ),
             row=1, col=2
         )
         if 'val_loss' in history.history:
             fig.add_trace(
-                go.Scatter(x=epochs_range, y=history.history['val_loss'], mode='lines+markers', name='Validation Loss', line=dict(color='#ffbc66')),
+                go.Scatter(
+                    x=epochs_range, y=history.history['val_loss'],
+                    mode='lines+markers', name='Validation Loss',
+                    line=dict(color='#ffbc66')
+                ),
                 row=1, col=2
             )
 

@@ -5,7 +5,9 @@ def tab_augmentation():
     gr.Markdown("""
         ## Augmentation
 
-        Select the source folder, destination folder, type of augmentation, and other parameters. Click "Augment Images" to perform the augmentations and view sample results.
+        Select the source folder, destination folder, type of
+        augmentation, and other parameters. Click "Augment Images" to
+        perform the augmentations and view sample results.
     """)
     with gr.Row():
         with gr.Column(scale=0, min_width=400):
@@ -17,10 +19,28 @@ def tab_augmentation():
                 value=100,
                 interactive=True
             )
-            range_nb_input = gr.Number(label="Number of image to process (0 for all)", value=0, precision=0, interactive=True)
-            seed_input = gr.Number(label="Random seed (0 for random)", value=0, precision=0, interactive=True)
-            augmentation_input = gr.Dropdown(label="Type of augmentation to process", value='All', choices=['All', 'Rotation', 'Blur', 'Contrast', 'Scaling', 'Illumination', 'Projective'], interactive=True)
-            display_output = gr.Radio(choices=['Yes', 'No'], label="Display image augmentation", value='Yes')
+            range_nb_input = gr.Number(
+                label="Number of image to process (0 for all)",
+                value=0, precision=0, interactive=True
+            )
+            seed_input = gr.Number(
+                label="Random seed (0 for random)",
+                value=0, precision=0, interactive=True
+            )
+            augmentation_input = gr.Dropdown(
+                label="Type of augmentation to process",
+                value='All',
+                choices=[
+                    'All', 'Rotation', 'Blur', 'Contrast', 'Scaling',
+                    'Illumination', 'Projective'
+                ],
+                interactive=True
+            )
+            display_output = gr.Radio(
+                choices=['Yes', 'No'],
+                label="Display image augmentation",
+                value='Yes'
+            )
             source_input = gr.FileExplorer(
                 label="Source Folder",
                 value=None,
@@ -33,9 +53,15 @@ def tab_augmentation():
                 value="data/leaves",
                 interactive=True
             )
-            augment_button = gr.Button("Augment Images", variant="primary")
+            augment_button = gr.Button(
+                "Augment Images", variant="primary"
+            )
         with gr.Column():
-            status = gr.Textbox(label="Status", value="Waiting for augmentation...", interactive=False)
+            status = gr.Textbox(
+                label="Status",
+                value="Waiting for augmentation...",
+                interactive=False
+            )
             status_md = gr.Markdown("### Sample Augmented Images")
             with gr.Row():
                 image_original = gr.Image(label="")  # 1
@@ -48,23 +74,33 @@ def tab_augmentation():
                 image_rotate = gr.Image(label="")  # 2
                 image_perspective = gr.Image(label="")  # 7
 
-    def display_augmentation(source, destination, range_percent, range_nb, seed, augmentation_type, display):
+    def display_augmentation(
+        source, destination, range_percent, range_nb, seed,
+        augmentation_type, display
+    ):
         import numpy as np
         import os
         from Augmentation import ImgAugmentator
-        from srcs.tools import load_images_from_list, save_images, range_processing
+        from srcs.tools import (
+            load_images_from_list, save_images, range_processing
+        )
 
         np.random.seed(seed if seed != 0 else None)
 
         images = load_images_from_list(source, original=True)
-        images = range_processing(images, range_percent=range_percent, range_nb=range_nb if range_nb != 0 else None)
+        images = range_processing(
+            images, range_percent=range_percent,
+            range_nb=range_nb if range_nb != 0 else None
+        )
 
         # Get a random image from the nested structure
         random_image = None
         if len(images) > 0:
             random_category = np.random.choice(list(images.keys()))
             if len(images[random_category]) > 0:
-                random_key = np.random.choice(list(images[random_category].keys()))
+                random_key = np.random.choice(
+                    list(images[random_category].keys())
+                )
                 random_image = images[random_category][random_key]
 
         augmentator = ImgAugmentator(images)
@@ -79,14 +115,24 @@ def tab_augmentation():
 
         save_images(augmented_images, destination)
 
-        status_msg = f"Augmented {sum(len(imgs) for imgs in augmented_images.values())} images for a total for {sum(sum(len(variations) for variations in imgs.values()) for imgs in augmented_images.values())} and saved to {destination}."
+        total_imgs = sum(len(imgs) for imgs in augmented_images.values())
+        total_variations = sum(
+            sum(len(variations) for variations in imgs.values())
+            for imgs in augmented_images.values()
+        )
+        status_msg = (
+            f"Augmented {total_imgs} images for a total for "
+            f"{total_variations} and saved to {destination}."
+        )
 
         random_augmented_images = []
         if display == 'Yes' and random_image is not None:
             for cat_name, aug_img in augmented_images.items():
                 cat_name = cat_name
                 for img_name, aug in aug_img.items():
-                    if np.array_equal(aug['original'], random_image['original']):
+                    if np.array_equal(
+                        aug['original'], random_image['original']
+                    ):
                         random_augmented_images.append(aug)
                         img_name = img_name
                         break
@@ -96,7 +142,11 @@ def tab_augmentation():
             aug_dict = random_augmented_images[0]
             idx = 0
 
-            tmp_full_dict = {cat_name: {img_name: {'original': aug_dict['original']}}}
+            tmp_full_dict = {
+                cat_name: {
+                    img_name: {'original': aug_dict['original']}
+                }
+            }
 
             tmp = ImgAugmentator(tmp_full_dict)
             tmp.augment()
@@ -106,27 +156,54 @@ def tab_augmentation():
             for aug_type in tmp_dict.keys():
                 if idx < 7:
                     import cv2
-                    rgb_image = cv2.cvtColor(tmp_dict[aug_type], cv2.COLOR_BGR2RGB)
+                    rgb_image = cv2.cvtColor(
+                        tmp_dict[aug_type], cv2.COLOR_BGR2RGB
+                    )
 
                     if aug_type == 'original':
-                        file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}.JPG")
+                        file_path = os.path.join(
+                            destination, random_category,
+                            f"{img_name.rstrip('.JPG')}.JPG"
+                        )
                     else:
-                        file_path = os.path.join(destination, random_category, f"{img_name.rstrip('.JPG')}_{aug_type}.JPG")
+                        file_path = os.path.join(
+                            destination, random_category,
+                            f"{img_name.rstrip('.JPG')}_{aug_type}.JPG"
+                        )
 
                     if os.path.exists(file_path):
-                        label = f"{aug_type} (Saved and used to increase dataset)"
+                        label = (
+                            f"{aug_type} (Saved and used to increase "
+                            f"dataset)"
+                        )
                     else:
-                        label = f"{aug_type} (Not saved, only for display)"
+                        label = (
+                            f"{aug_type} (Not saved, only for display)"
+                        )
 
-                    image_outputs[idx] = gr.Image(value=rgb_image, label=label, visible=True)
+                    image_outputs[idx] = gr.Image(
+                        value=rgb_image, label=label, visible=True
+                    )
                     idx += 1
 
-        status_md = f"### Sample Augmented Image: {cat_name}/{img_name}" if len(random_augmented_images) > 0 else "### No augmented images to display."
+        status_md = (
+            f"### Sample Augmented Image: {cat_name}/{img_name}"
+            if len(random_augmented_images) > 0
+            else "### No augmented images to display."
+        )
 
         return status_msg, status_md, *image_outputs
 
     augment_button.click(
         display_augmentation,
-        inputs=[source_input, dest_output, range_percent_input, range_nb_input, seed_input, augmentation_input, display_output],
-        outputs=[status, status_md, image_original, image_rotate, image_blur, image_illumination, image_scaled, image_contrast, image_perspective]
+        inputs=[
+            source_input, dest_output, range_percent_input,
+            range_nb_input, seed_input, augmentation_input,
+            display_output
+        ],
+        outputs=[
+            status, status_md, image_original, image_rotate, image_blur,
+            image_illumination, image_scaled, image_contrast,
+            image_perspective
+        ]
     )

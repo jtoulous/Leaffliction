@@ -11,15 +11,16 @@ from sklearn.preprocessing import LabelBinarizer
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-from tensorflow.keras.models import Sequential, model_from_json  # type: ignore # noqa: E402
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense  # type: ignore # noqa: E402
-from tensorflow.keras.utils import Sequence  # type: ignore # noqa: E402
+from tensorflow.keras.models import Sequential, model_from_json  # type: ignore # noqa: E402, E501
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense  # type: ignore # noqa: E402, E501
+from tensorflow.keras.utils import Sequence  # type: ignore # noqa: E402, E501
 
 from Transformation import ImgTransformator  # noqa: E402
 
 
 class DetectionAgent:
-    def __init__(self, transfo=['gaussian_blur'], epochs=10, train_size=0.9, img_size=(256, 256), batch_size=32):
+    def __init__(self, transfo=['gaussian_blur'], epochs=10,
+                 train_size=0.9, img_size=(256, 256), batch_size=32):
         self.transformations = transfo
         self.epochs = epochs
         self.train_size = train_size
@@ -103,11 +104,19 @@ class DetectionAgent:
         for transfo in self.transformations:
             transformed_images.append(transformer.quick_use(img, transfo))
 
-        return self.encoder.inverse_transform(prediction)[0], transformed_images
+        return (
+            self.encoder.inverse_transform(prediction)[0],
+            transformed_images
+        )
 
     def save(self, save_folder):
-        model_weights_file = os.path.join(save_folder, 'model.weights.h5')  # CHANGÉ: ajouté .weights
-        model_arch_file = os.path.join(save_folder, 'model_architecture.json')
+        # CHANGÉ: ajouté .weights
+        model_weights_file = os.path.join(
+            save_folder, 'model.weights.h5'
+        )
+        model_arch_file = os.path.join(
+            save_folder, 'model_architecture.json'
+        )
         agent_file = os.path.join(save_folder, 'agent.pkl')
 
         if os.path.exists(save_folder):
@@ -137,8 +146,13 @@ class DetectionAgent:
 
     @staticmethod
     def load(load_folder):
-        model_weights_file = os.path.join(load_folder, 'model.weights.h5')  # CHANGÉ
-        model_arch_file = os.path.join(load_folder, 'model_architecture.json')
+        # CHANGÉ
+        model_weights_file = os.path.join(
+            load_folder, 'model.weights.h5'
+        )
+        model_arch_file = os.path.join(
+            load_folder, 'model_architecture.json'
+        )
         agent_file = os.path.join(load_folder, 'agent.pkl')
 
         with open(agent_file, 'rb') as a_file:
@@ -164,7 +178,8 @@ class DetectionAgent:
         return agent
 
     @staticmethod
-    def load_from_files(model_weights_file_path, agent_file_path, model_arch_file_path):
+    def load_from_files(model_weights_file_path, agent_file_path,
+                        model_arch_file_path):
         # Charger l'agent (sans modèle)
         with open(agent_file_path, 'rb') as f:
             agent = pickle.load(f)
@@ -172,7 +187,7 @@ class DetectionAgent:
 #        # Charger le modèle keras
 #        agent.model = load_model(model_file_path)
 
-        from tensorflow.keras.models import model_from_json  # type: ignore # noqa: E402
+        from tensorflow.keras.models import model_from_json  # type: ignore # noqa: E402, E501
         with open(model_arch_file_path, 'r') as f:
             model_arch = f.read()
 
@@ -199,7 +214,8 @@ class DetectionAgent:
 
 
 class DataManager(Sequence):
-    def __init__(self, X, y, img_size, batch_size, transformations=None, shuffle=True):
+    def __init__(self, X, y, img_size, batch_size,
+                 transformations=None, shuffle=True):
         self.X = X
         self.y = y
         self.img_size = img_size
@@ -216,7 +232,9 @@ class DataManager(Sequence):
         return int(np.ceil(len(self.X) / self.batch_size))
 
     def __getitem__(self, index):
-        batch_indices = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
+        batch_indices = self.indices[
+            index * self.batch_size:(index + 1) * self.batch_size
+        ]
 
         X_batch = []
         y_batch = []
@@ -231,8 +249,12 @@ class DataManager(Sequence):
 
             # Transform
             for transfo in self.transformations:
-                transformed_img = self.transformator.quick_use(self.X[i], transfo)
-                transformed_img = cv2.resize(transformed_img, self.img_size)
+                transformed_img = self.transformator.quick_use(
+                    self.X[i], transfo
+                )
+                transformed_img = cv2.resize(
+                    transformed_img, self.img_size
+                )
                 transformed_img = transformed_img.astype('float32') / 255.0
 
                 X_batch.append(transformed_img)

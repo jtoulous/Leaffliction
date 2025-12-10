@@ -13,10 +13,22 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 def ArgumentParsing():
     parser = ap.ArgumentParser()
-    parser.add_argument('--source', default='data/leaves', help='Folder with images to train on (default: data/leaves)')
-    parser.add_argument('--destination', default='DetectionAgent_1', help='Model save folder (default: DetectionAgent_1)')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of training epochs (default: 10)')
-    parser.add_argument('--transfo', default=[], nargs='+', help='Transformations to apply during training')
+    parser.add_argument(
+        '--source', default='data/leaves',
+        help='Folder with images to train on (default: data/leaves)'
+    )
+    parser.add_argument(
+        '--destination', default='DetectionAgent_1',
+        help='Model save folder (default: DetectionAgent_1)'
+    )
+    parser.add_argument(
+        '--epochs', type=int, default=10,
+        help='Number of training epochs (default: 10)'
+    )
+    parser.add_argument(
+        '--transfo', default=[], nargs='+',
+        help='Transformations to apply during training'
+    )
 
     return parser.parse_args()
 

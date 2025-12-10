@@ -7,14 +7,21 @@ from srcs.DetectionAgent import DetectionAgent
 
 def ArgumentParsing():
     parser = ap.ArgumentParser()
-    parser.add_argument('--source', nargs='+', help='Paths to images to predict on (can be multiple)')
-    parser.add_argument('--model', default='DetectionAgent_1', help='Model folder to load (default: DetectionAgent_1)')
+    parser.add_argument(
+        '--source', nargs='+',
+        help='Paths to images to predict on (can be multiple)'
+    )
+    parser.add_argument(
+        '--model', default='DetectionAgent_1',
+        help='Model folder to load (default: DetectionAgent_1)'
+    )
 
     return parser.parse_args()
 
 
 def image_to_unicode(img, width=40):
-    height = int(width * img.shape[0] / img.shape[1] / 2)  # /2 car caractères hauts
+    # /2 car caractères hauts
+    height = int(width * img.shape[0] / img.shape[1] / 2)
     small_img = cv2.resize(img, (width, height))
 
     # Caractères de bloc Unicode
