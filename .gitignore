@@ -3,3 +3,5 @@ venv
 data/*
 !data/.gitkeep
 .vscode/
+zip_eval.zip
+zip_eval/leaves_augmented.zip
