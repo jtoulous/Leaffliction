@@ -1,404 +1,111 @@
-# Leaffliction 🌿🍂
+<div align="center">
 
-A computer vision project for **image classification by disease recognition on leaves**. This project implements a complete pipeline for analyzing, augmenting, transforming, training, and predicting plant diseases from leaf images.
+# Leaffliction
 
-## 📋 Table of Contents
+![Language](https://img.shields.io/badge/language-Python-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-completed-brightgreen?style=for-the-badge)
 
-- [Overview](#overview)
+**Leaf disease classification using a CNN trained on the PlantVillage dataset.**
+
+🌐 [leaffliction.rsterin.fr](https://leaffliction.rsterin.fr) — *coming soon*
+
+</div>
+
+---
+
+<details>
+<summary><strong>Table of Contents</strong></summary>
+
+- [About](#about)
 - [Features](#features)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
 - [Usage](#usage)
-  - [Web Interface (Gradio)](#web-interface-gradio)
-  - [Command Line Tools](#command-line-tools)
-- [Dataset](#dataset)
-- [Model Performance](#model-performance)
-- [Technical Details](#technical-details)
-- [Requirements](#requirements)
-- [Dataset & Model](#dataset--model)
 
-## 🎯 Overview
+</details>
 
-Leaffliction is a comprehensive machine learning system designed to identify plant diseases from leaf images. The project supports multiple plant types (Apple, Grape) and various disease categories including:
+## About
 
-- **Apple**: Black rot, Healthy, Rust, Scab
-- **Grape**: Black rot, Esca, Healthy, Leaf spot
+A deep learning pipeline that classifies leaf diseases from photographs. The CNN is trained on 8 classes of Apple and Grape leaves (healthy and diseased) from the [PlantVillage](https://plantvillage.psu.edu/) dataset. The project includes image augmentation, transformation preprocessing, distribution analysis, and an interactive Streamlit web app.
 
-The system achieves **>90% accuracy** on validation sets with a minimum of 100 images, using a combination of data augmentation, image transformation, and deep learning techniques.
+This is a [42](https://42.fr) school project.
 
-## ✨ Features
+## Features
 
-### 1. **Data Distribution Analysis**
-- Interactive pie charts and bar plots
-- Visualization of dataset balance across categories
-- Support for original and augmented image analysis
+- **CNN classifier** — Conv2D architecture with batch normalization and dropout, trained with Adam
+- **Image augmentation** — rotation, blur, contrast, scaling, illumination, and projective transforms to balance the dataset
+- **Preprocessing pipeline** — background removal, masking, ROI detection, pseudolandmarks, and spot isolation via PlantCV
+- **Streamlit web app** — predict, visualize distributions, preview transformations/augmentations, and generate training commands
+- **Pretrained model included** — ready-to-use model in `pretrained_agent/`
+- **Custom model upload** — import your own trained model via the sidebar
 
-### 2. **Data Augmentation**
-- **6 augmentation techniques**:
-  - Rotation (random angles)
-  - Gaussian blur
-  - Contrast adjustment
-  - Scaling/Zoom
-  - Illumination changes
-  - Projective transformation
-- Automatic dataset balancing through oversampling
-- Preserves original images alongside augmented versions
+## Tech Stack
 
-### 3. **Image Transformation**
-- **6 transformation methods**:
-  - Gaussian blur with leaf segmentation
-  - Mask generation for leaf isolation
-  - ROI (Region of Interest) detection
-  - Pseudolandmark generation
-  - Disease spot isolation
-  - Background removal
-- PlantCV integration for advanced plant analysis
-- Batch processing with progress tracking
+| Component  | Technology                                              |
+|:-----------|:--------------------------------------------------------|
+| Language   | [Python](https://www.python.org/) 3.10+                |
+| DL         | [TensorFlow](https://www.tensorflow.org/) / [Keras](https://keras.io/) |
+| CV         | [OpenCV](https://opencv.org/) / [PlantCV](https://plantcv.readthedocs.io/) |
+| ML         | [scikit-learn](https://scikit-learn.org/)               |
+| Web UI     | [Streamlit](https://streamlit.io/)                      |
 
-### 4. **Training & Classification**
-- Deep learning model training with TensorFlow/Keras
-- Automatic train/validation split
-- Model persistence (saved as `.zip`)
-- Progress tracking with Rich library
-
-### 5. **Prediction**
-- Load pre-trained models
-- Predict disease class from new leaf images
-- Display original and transformed images
-- ASCII art visualization in terminal
-
-### 6. **Interactive Web Interface**
-- Built with Gradio
-- Tabbed interface for each module:
-  - Home (with interactive terminal)
-  - Distribution
-  - Augmentation
-  - Transformation
-  - Training
-  - Prediction
-- Real-time visualization
-- Interactive command execution
-- Dark theme with custom Plotly styling
-
-## 📁 Project Structure
-
-```
-Leaffliction/
-├── app.py                      # Gradio web interface
-├── Distribution.py             # CLI for distribution analysis
-├── Augmentation.py             # CLI for data augmentation
-├── Transformation.py           # CLI for image transformation
-├── train.py                    # Model training script
-├── predict.py                  # Prediction script
-├── Makefile                    # Build automation
-├── requirements.txt            # Python dependencies
-├── signature.txt               # zip_eval.zip SHA1 hash
-├── .gitignore                  # Git ignore rules
-├── data/
-│   ├── leaves.zip              # Original dataset (zipped)
-│   ├── leaves/                 # Extracted dataset (after unzip)
-│   │   ├── Apple_Black_rot/
-│   │   ├── Apple_healthy/
-│   │   ├── Apple_rust/
-│   │   ├── Apple_scab/
-│   │   ├── Grape_Black_rot/
-│   │   ├── Grape_Esca/
-│   │   ├── Grape_healthy/
-│   │   └── Grape_spot/
-│   └── leaves_preprocessed/    # Processed images (generated)
-├── zip_eval/
-│   └── SuperAgent/             # Pre-trained model
-│       ├── agent.pkl
-│       ├── model_architecture.json
-│       └── model.weights.h5
-├── zip_eval.zip                # Evaluation package
-└── srcs/
-    ├── DetectionAgent.py       # ML model wrapper
-    ├── tab_augmentation.py     # Gradio augmentation tab
-    ├── tab_distribution.py     # Gradio distribution tab
-    ├── tab_transformation.py   # Gradio transformation tab
-    ├── tab_training.py         # Gradio training tab
-    ├── tab_prediction.py       # Gradio prediction tab
-    ├── tab_terminal.py         # Gradio terminal tab
-    └── tools.py                # Utility functions
-```
-
-## 🚀 Installation
+## Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- pip package manager
-- Virtual environment support
 
-### Setup
+| Tool                                    | Version |
+|:----------------------------------------|:--------|
+| [Python](https://www.python.org/)       | ≥ 3.10  |
+| Make                                    | —       |
 
-1. **Clone the repository**
+### Installation
+
 ```bash
-git clone https://github.com/jtoulous/Leaffliction.git
+git clone https://github.com/rsterin/Leaffliction.git
 cd Leaffliction
+make
 ```
 
-2. **Automated setup** (recommended)
-```bash
-make all
-```
+### Build & Run
 
-This will:
-- Create a virtual environment in `~/goinfre/venv`
-- Install all dependencies from `requirements.txt`
-- Unzip the dataset
-- Launch the Gradio web interface
-
-3. **Manual setup**
-```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Linux/Mac
-# or
-venv\Scripts\activate  # On Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Unzip dataset
-make unzip
-```
-
-4. **Activate the environment**
-```bash
-source ~/goinfre/venv/bin/activate
-```
-
-## 📖 Usage
-
-### Web Interface (Gradio)
-
-Launch the interactive web interface:
+> **Full pipeline** (train from scratch)
 
 ```bash
-python app.py
+python train.py --source data/leaves/images --destination my_model --epochs 10 --transfo gaussian_blur
 ```
 
-Then open your browser to `http://localhost:7860` (or the URL shown in terminal).
-
-#### Available Tabs:
-- **Home**: Interactive terminal interface and README documentation
-- **Distribution**: Analyze dataset distribution with interactive charts
-- **Augmentation**: Apply and visualize data augmentation techniques
-- **Transformation**: Apply image transformations for preprocessing
-- **Training**: Train classification models with real-time progress tracking
-- **Prediction**: Predict diseases on new images with pre-trained models
-
-### Command Line Tools
-
-#### 1. Distribution Analysis
-
-Display dataset distribution:
+> **Predict**
 
 ```bash
-# All charts (pie + bar)
-python Distribution.py --source data/leaves
-
-# Only pie chart
-python Distribution.py --source data/leaves --distribution pie
-
-# Include augmented images
-python Distribution.py --source data/leaves --all-images
+python predict.py --source path/to/image.JPG --model pretrained_agent
 ```
 
-#### 2. Data Augmentation
-
-Augment images to balance the dataset:
+> **Streamlit app**
 
 ```bash
-# Augment all images with all techniques
-python Augmentation.py --source data/leaves --destination data/leaves
-
-# Apply specific augmentation
-python Augmentation.py --source data/leaves --augmentation rotation
-
-# Process specific number of images
-python Augmentation.py --source data/leaves --range-nb 100
-
-# Process percentage of dataset
-python Augmentation.py --source data/leaves --range-percent 50
-
-# Display images during processing
-python Augmentation.py --source data/leaves --display
-
-# Set random seed for reproducibility
-python Augmentation.py --source data/leaves --seed 42
+streamlit run app.py
 ```
 
-**Available augmentations**: `rotation`, `blur`, `contrast`, `scaling`, `illumination`, `projective`
+### Verify
 
-#### 3. Image Transformation
+Open [http://localhost:8501](http://localhost:8501) — upload a leaf image in the Prediction tab to classify it.
 
-Apply preprocessing transformations:
+## Usage
 
-```bash
-# Transform all images with all methods
-python Transformation.py --source data/leaves --destination data/leaves_preprocessed
+| Command       | Description                                                |
+|:--------------|:-----------------------------------------------------------|
+| `train.py`    | Train a new model on the dataset                           |
+| `predict.py`  | Classify leaf images using a trained model                 |
+| `app.py`      | Launch the Streamlit web app                               |
 
-# Apply specific transformation
-python Transformation.py --source data/leaves --transform mask
+| Flag (train)       | Description                                     |
+|:-------------------|:------------------------------------------------|
+| `--source`         | Folder with training images (default: `data/leaves`) |
+| `--destination`    | Model save folder                               |
+| `--epochs`         | Number of training epochs (default: 10)         |
+| `--transfo`        | Transformations to apply (e.g. `gaussian_blur`) |
 
-# Process single image
-python Transformation.py --source data/leaves/Apple_healthy/image001.JPG --display
-
-# Process with range limits
-python Transformation.py --source data/leaves --range-nb 50 --range-percent 100
-```
-
-**Available transformations**: `gaussian_blur`, `mask`, `roi_objects`, `pseudolandmarks`, `spots_isolation`, `background_removal`
-
-#### 4. Model Training
-
-Train a classification model:
-
-```bash
-# Basic training
-python train.py -imgs_folder data/leaves -save_folder DetectionAgent_1
-
-# Custom epochs
-python train.py -imgs_folder data/leaves -epochs 50
-
-# With specific transformations
-python train.py -imgs_folder data/leaves -transfo gaussian_blur mask
-```
-
-#### 5. Prediction
-
-Predict disease from new images:
-
-```bash
-python predict.py image1.jpg image2.jpg -load_folder DetectionAgent_1
-```
-
-Output includes:
-- ASCII art representation of images
-- Transformed image visualizations
-- Predicted disease class
-
-## 📊 Dataset
-
-The dataset is provided as `data/leaves.zip` and must be extracted before use (automatically handled by `make all`).
-
-Once extracted, it's organized by plant type and disease category:
-
-```
-data/leaves/
-├── Apple_Black_rot/     # Apple leaves with black rot disease
-├── Apple_healthy/       # Healthy apple leaves
-├── Apple_rust/          # Apple leaves with rust disease
-├── Apple_scab/          # Apple leaves with scab disease
-├── Grape_Black_rot/     # Grape leaves with black rot
-├── Grape_Esca/          # Grape leaves with Esca disease
-├── Grape_healthy/       # Healthy grape leaves
-└── Grape_spot/          # Grape leaves with leaf spot
-```
-
-### Dataset Verification
-
-The project includes a `signature.txt` file containing the SHA1 hash of the evaluation package for integrity verification:
-
-```bash
-# Linux
-sha1sum zip_eval.zip
-
-# macOS
-shasum zip_eval.zip
-
-# Windows
-certUtil -hashfile zip_eval.zip sha1
-```
-
-## 📈 Model Performance
-
-The trained model achieves:
-- **Accuracy**: >90% on validation set
-- **Validation set size**: Minimum 100 images
-- **Training/Validation split**: Automatic separation
-- **No data leakage**: Validation set completely isolated
-
-## 🔧 Technical Details
-
-### Technologies Used
-
-- **Deep Learning**: TensorFlow, Keras
-- **Computer Vision**: OpenCV, PlantCV
-- **Data Science**: NumPy, Pandas, scikit-learn
-- **Visualization**: Matplotlib, Seaborn, Plotly
-- **Web Interface**: Gradio
-- **CLI**: Rich (progress bars), argparse
-
-### Image Processing Pipeline
-
-1. **Load**: Read images from directory structure
-2. **Augment**: Apply augmentation techniques to balance dataset
-3. **Transform**: Extract features through transformations
-4. **Train**: Deep learning model training
-5. **Predict**: Classification of new images
-
-### Custom Features
-
-- **Smart image loading**: Detects file/folder/root directory structures
-- **Progress tracking**: Real-time progress bars with Rich
-- **Batch processing**: Efficient processing of large datasets
-- **Range control**: Process specific subsets via count or percentage
-- **Reproducibility**: Seed control for random operations
-- **Custom Plotly theme**: Matches Gradio dark theme with gradient colors
-
-## 📦 Requirements
-
-Key dependencies (see `requirements.txt` for complete list):
-
-```
-tensorflow>=2.20.0
-opencv-python>=4.12.0
-gradio>=5.49.1
-plantcv>=4.9
-pandas>=2.3.3
-plotly>=5.0.0
-scikit-learn>=1.7.2
-matplotlib>=3.10.7
-seaborn>=0.13.2
-rich>=14.2.0
-numpy>=2.2.6
-```
-
-## 📦 Dataset & Model
-
-Dataset and model used for the evaluation are available [here](https://gofile.io/d/9LrCUP)
-
-## 🧹 Maintenance
-
-### Clean generated files
-```bash
-make clean  # Remove __pycache__ and processed data
-```
-
-### Complete cleanup
-```bash
-make fclean  # Remove virtual environment and all generated files
-```
-
-### Rebuild everything
-```bash
-make re  # Clean and rebuild from scratch
-```
-
-## 📝 License
-
-This is an educational project developed as part of a computer vision curriculum.
-
-## 👥 Authors
-
-- **jtoulous**
-- **rsterin**
-
-## 🙏 Acknowledgments
-
-- PlantCV library for plant-specific image analysis
-- Gradio for the intuitive web interface framework
-- The open-source community for excellent ML/CV tools
+| Flag (predict)     | Description                                     |
+|:-------------------|:------------------------------------------------|
+| `--source`         | Image path(s) to classify                       |
+| `--model`          | Model folder to load (default: `DetectionAgent_1`) |

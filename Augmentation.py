@@ -22,6 +22,10 @@ class ImgAugmentator:
             images_structure (dict): A dictionary containing images
                 categorized by class names.
         """
+        if not images_structure:
+            raise ValueError(
+                "No images found. Check the --source path."
+            )
         self.images_structure = images_structure
         self.max_disease_count = max(
             len(imgs) for imgs in images_structure.values()
@@ -504,13 +508,13 @@ def ArgumentParsing():
     parser.add_argument(
         '--source',
         type=str,
-        default='data/leaves',
-        help='Folder with original images (default: data/leaves)')
+        default='data/leaves/images',
+        help='Folder with original images (default: data/leaves/images)')
     parser.add_argument(
         '--destination',
         type=str,
-        default='data/leaves',
-        help='Folder to save augmented images (default: data/leaves)')
+        default='data/leaves/images',
+        help='Folder to save augmented images (default: data/leaves/images)')
     parser.add_argument(
         '--display',
         action='store_true',

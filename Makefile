@@ -14,19 +14,6 @@ install:
 	@. ~/goinfre/venv/bin/activate && pip install -r requirements.txt
 	@echo "$(GREEN) --> Done.$(RESET)"
 
-unzip:
-	@echo "$(GREEN)Unzipping data files...$(RESET)"
-	@for file in data/*.zip; do \
-		if [ -f "$$file" ]; then \
-			unzip -o "$$file" -d data/`basename "$$file" .zip`; \
-		else \
-			echo "$(RED)No zip files found in data/ folder.$(RESET)"; \
-		fi \
-	done
-	@mv data/leaves/images/* data/leaves/ -n
-	@rm -rf data/leaves/images/
-	@echo "$(GREEN) --> Done.$(RESET)"
-
 activate:
 	@echo "$(GREEN) To activate the virtual environment, run: $(RESET)"
 	@echo "   '. ~/goinfre/venv/bin/activate'"
@@ -35,14 +22,6 @@ activate:
 	@echo "\n$(GREEN)Launching the Gradio app...$(RESET)"
 	@. ~/goinfre/venv/bin/activate && gradio app.py
 
-zip:
-	@echo "$(GREEN)Zipping data files...$(RESET)"
-	@mkdir -p data/leaves_preprocessed/images
-	@find data/leaves_preprocessed -mindepth 1 -maxdepth 1 ! -name images -exec cp -r {} data/leaves/images/ \;
-	@cd data/leaves_preprocessed && zip -r ../../data/leaves_preprocessed.zip images
-	@rm -rf data/leaves/images/
-	@echo "$(GREEN) --> Done.$(RESET)"
-
 clean:
 	@echo "$(GREEN)Cleaning...$(RESET)"
 	@if [ -d __pycache__ ] || [ -d srcs/__pycache__ ]; then \
@@ -50,8 +29,8 @@ clean:
 		find . -type d -name '__pycache__' -exec rm -rf {} +; \
 	fi
 	@if [ -d data/leaves ]; then \
-		echo "$(GREEN)     --> Removing leaves folder..."; \
-		rm -rf data/leaves; \
+		echo "$(GREEN)     --> Removing augmented images from leaves folder..."; \
+		find data/leaves -type f -name '*_*' -delete; \
 	fi
 	@if [ -d data/leaves_preprocessed ]; then \
 		echo "$(GREEN)     --> Removing leaves_preprocessed folder..."; \

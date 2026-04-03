@@ -1,6 +1,6 @@
 absl-py==2.3.1
 aiofiles==24.1.0
-altair==5.0.0
+altair==6.0.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.11.0
@@ -26,8 +26,7 @@ fonttools==4.60.1
 fsspec==2025.10.0
 gast==0.6.0
 google-pasta==0.2.0
-gradio==5.49.1
-gradio_client==1.13.3
+streamlit==1.56.0
 groovy==0.1.2
 grpcio==1.76.0
 h11==0.16.0
