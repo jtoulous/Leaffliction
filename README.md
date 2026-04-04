@@ -7,7 +7,7 @@
 
 **Leaf disease classification using a CNN trained on the PlantVillage dataset.**
 
-🌐 [leaffliction.rsterin.fr](https://leaffliction.rsterin.fr) — *coming soon*
+🌐 [leaffliction.rsterin.fr](https://leaffliction.rsterin.fr)
 
 </div>
 
