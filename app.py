@@ -71,7 +71,7 @@ col_caption, col_link = st.columns([4, 1])
 col_caption.caption("Leaf disease classification using deep learning")
 col_link.markdown(
     "[![GitHub](https://img.shields.io/badge/GitHub-repo-181717?logo=github)]"
-    "(https://github.com/rsterin/Leaffliction)"
+    "(https://github.com/jtoulous/Leaffliction)"
 )
 
 # ── Sidebar ──────────────────────────────────────────────────
